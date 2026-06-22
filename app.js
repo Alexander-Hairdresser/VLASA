@@ -281,6 +281,7 @@ function switchChar(char) {
   const c = CHARS[char] || CHARS['vlasa-lab'];
   document.getElementById('char-name').textContent = c.name;
   document.getElementById('hero-tagline').textContent = c.tagline;
+  const hn = document.getElementById('hero-name'); if(hn) hn.textContent = c.name;
   document.getElementById('hero-img').style.objectPosition = c.heroPos;
   // Re-render
   const today = new Date(); today.setHours(0,0,0,0);

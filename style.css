@@ -67,16 +67,17 @@ body[data-char="alexander"]  { --accent: #fbbf24; }
 .header-controls { display: flex; gap: 6px; align-items: center; }
 
 .btn-lang {
-  font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
-  padding: 4px 9px; border-radius: 20px;
-  background: var(--surface3); border: 1px solid var(--border);
-  color: var(--text-dim); cursor: pointer; transition: all 0.15s;
+  font-size: 10px; font-weight: 800; letter-spacing: 0.1em;
+  padding: 5px 11px; border-radius: 20px;
+  background: var(--surface3); border: 1.5px solid var(--border);
+  color: var(--text-dim); cursor: pointer; transition: all 0.2s;
+  text-transform: uppercase;
 }
 .btn-lang.ru-active {
-  background: rgba(198,255,0,0.12); border-color: var(--lime);
-  color: var(--lime);
+  background: rgba(198,255,0,0.1); border-color: var(--accent);
+  color: var(--accent); box-shadow: 0 0 8px rgba(198,255,0,0.2);
 }
-.btn-lang:active { transform: scale(0.95); }
+.btn-lang:active { transform: scale(0.92); }
 
 
 .header-date {
@@ -90,7 +91,7 @@ body[data-char="alexander"]  { --accent: #fbbf24; }
 
 /* ── HERO BANNER ── */
 .hero-banner {
-  position: relative; width: 100%; height: 260px;
+  position: relative; width: 100%; height: 280px;
   overflow: hidden; background: #0d0d0d;
 }
 .hero-img {
@@ -100,11 +101,23 @@ body[data-char="alexander"]  { --accent: #fbbf24; }
 }
 .hero-overlay {
   position: absolute; inset: 0;
-  background: linear-gradient(to bottom, transparent 30%, rgba(10,10,10,0.92) 100%);
-  display: flex; align-items: flex-end; padding: 12px 16px;
+  background: linear-gradient(
+    to bottom,
+    rgba(10,10,10,0.15) 0%,
+    transparent 35%,
+    rgba(10,10,10,0.7) 70%,
+    rgba(10,10,10,0.96) 100%
+  );
+  display: flex; flex-direction: column;
+  justify-content: flex-end; padding: 14px 16px 18px;
+  gap: 3px;
+}
+.hero-name {
+  font-size: 18px; font-weight: 800; letter-spacing: 0.04em;
+  color: #fff; line-height: 1.1; text-shadow: 0 2px 8px rgba(0,0,0,0.8);
 }
 .hero-tagline {
-  font-size: 11px; font-weight: 700; letter-spacing: 0.12em;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.14em;
   text-transform: uppercase; color: var(--accent);
   transition: color 0.3s;
 }
