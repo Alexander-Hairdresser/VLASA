@@ -4,7 +4,7 @@
    ============================================= */
 
 const BASE_DATE = new Date('2026-06-20');
-const HIXEL_URL = 'https://hixel.ai'; // Replace with actual Hixel link
+const HIXEL_URL = 'https://higgsfield.ai'; // Replace with actual Hixel link
 
 // In-memory task state (resets on reload — by design)
 const taskState = {};
@@ -289,7 +289,7 @@ function renderHixel() {
   el.innerHTML = `
     <div class="hixel-section">
       <a class="btn-hixel" href="${HIXEL_URL}" target="_blank" rel="noopener">
-        🖼 Открыть Hixel
+        🎬 Открыть Higgsfield
       </a>
     </div>`;
 }
