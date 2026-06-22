@@ -3,7 +3,6 @@
    ============================================= */
 
 const BASE_DATE = new Date('2026-06-20');
-const HIGGSFIELD_URL = 'https://higgsfield.ai';
 
 // ── STATE ─────────────────────────────────────
 let currentChar = 'vlasa-lab';
@@ -81,8 +80,6 @@ function renderVlasaLab(dayIndex, container) {
   // Cats accordion
   html += `<div id="cats-section">${catsHTML()}</div>`;
 
-  // Higgsfield
-  html += `<div class="hixel-section"><a class="btn-hixel" href="${HIGGSFIELD_URL}" target="_blank" rel="noopener">🎬 Открыть Higgsfield</a></div>`;
 
   // Footer
   html += `<footer class="footer">B.Like Active Lab · Sprint 01 · v2</footer>`;
