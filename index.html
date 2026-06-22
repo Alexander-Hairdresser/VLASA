@@ -3,8 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Ежедневный дашборд публикаций — Власа Смоленская / B.Like Active Lab">
-  <title>Власа — Дашборд</title>
+  <title>B.Like Dashboard</title>
   <link rel="stylesheet" href="style.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='28' font-size='28'>⚗️</text></svg>">
 </head>
@@ -13,48 +12,71 @@
   <!-- HEADER -->
   <header class="header">
     <div class="header-brand">
-      <span class="header-name">Власа Смоленская</span>
-      <span class="header-sub">B.Like Active Lab · <span id="header-day">День —</span></span>
+      <span class="header-name" id="char-name">Власа Смоленская</span>
+      <span class="header-sub">B.Like · <span id="header-day">День —</span></span>
     </div>
-    <div class="header-date" id="header-date">
-      <strong>—</strong>
+    <div class="header-controls">
+      <button class="btn-lang" id="btn-lang" onclick="toggleLang()" title="Перевод">EN</button>
+      <button class="btn-tiktok" onclick="openTokenModal()" title="TikTok токены">🎵</button>
     </div>
+    <div class="header-date" id="header-date"><strong>—</strong></div>
   </header>
 
+  <!-- HERO BANNER -->
+  <div class="hero-banner" id="hero-banner">
+    <img src="images/vlasa_hero.jpg" alt="Власа" class="hero-img" id="hero-img">
+    <div class="hero-overlay">
+      <span class="hero-tagline" id="hero-tagline">B.Like Active Lab</span>
+    </div>
+  </div>
+
   <!-- MAIN -->
-  <main id="main-content">
+  <main id="main-content"></main>
 
-    <!-- SPRINT PROGRESS -->
-    <div id="sprint-section"></div>
+  <!-- BOTTOM NAV -->
+  <nav class="bottom-nav" id="bottom-nav">
+    <button class="nav-btn active" data-char="vlasa-lab" onclick="switchChar('vlasa-lab')">
+      <span class="nav-icon">🧪</span>
+      <span class="nav-label">Влаcа</span>
+    </button>
+    <button class="nav-btn" data-char="vlasa-hair" onclick="switchChar('vlasa-hair')">
+      <span class="nav-icon">✂️</span>
+      <span class="nav-label">Парикмахер</span>
+    </button>
+    <button class="nav-btn" data-char="cats" onclick="switchChar('cats')">
+      <span class="nav-icon">🐱</span>
+      <span class="nav-label">Коты</span>
+    </button>
+    <button class="nav-btn" data-char="products" onclick="switchChar('products')">
+      <span class="nav-icon">🛍</span>
+      <span class="nav-label">Продукты</span>
+    </button>
+    <button class="nav-btn" data-char="alexander" onclick="switchChar('alexander')">
+      <span class="nav-icon">👑</span>
+      <span class="nav-label">Александр</span>
+    </button>
+  </nav>
 
-    <!-- TODAY X -->
-    <div class="section-label">🐦 Сегодня в X / Twitter</div>
-    <div id="today-x"></div>
-
-    <!-- TODAY INSTAGRAM -->
-    <div class="section-label">📸 Сегодня в Instagram</div>
-    <div id="today-ig"></div>
-
-    <!-- TOMORROW -->
-    <div class="section-label">Завтра</div>
-    <div id="tomorrow-section"></div>
-
-    <!-- TASKS -->
-    <div class="section-label">Задачи</div>
-    <div id="tasks-section"></div>
-
-    <!-- CATS -->
-    <div id="cats-section"></div>
-
-    <!-- HIXEL -->
-    <div id="hixel-section"></div>
-
-  </main>
-
-  <!-- FOOTER -->
-  <footer class="footer">
-    B.Like Active Lab · Sprint 01 · Версия 1.0
-  </footer>
+  <!-- TIKTOK TOKEN MODAL -->
+  <div class="modal-overlay" id="token-modal" style="display:none" onclick="closeTokenModal(event)">
+    <div class="modal-box" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <span>🎵 TikTok Токены</span>
+        <button class="modal-close" onclick="closeTokenModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <a class="btn btn-primary" href="https://www.tiktok.com/creator#/analytics" target="_blank" rel="noopener" style="display:flex;margin-bottom:14px">
+          Открыть TikTok Creator Center ↗
+        </a>
+        <div style="margin-bottom:10px;font-size:13px;color:var(--text-dim)">Внеси количество токенов вручную:</div>
+        <div style="display:flex;gap:8px">
+          <input id="token-input" type="number" placeholder="напр. 1240" class="token-input" min="0">
+          <button class="btn btn-copy" onclick="saveToken()" style="flex-shrink:0;width:80px">Сохранить</button>
+        </div>
+        <div id="token-history" style="margin-top:14px"></div>
+      </div>
+    </div>
+  </div>
 
   <script src="app.js"></script>
 </body>

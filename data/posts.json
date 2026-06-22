@@ -1,163 +1,146 @@
 [
   {
-    "day": 1,
-    "date": "2026-06-20",
+    "day": 1, "date": "2026-06-20",
     "x": {
-      "id": "POST01",
-      "pillar": "LAB NOTES",
+      "id": "POST01", "pillar": "LAB NOTES",
       "text": "Lab note #01.\n\nHair does not need drama.\n\nIt needs clear sections,\nproper tension,\nand a formula mixed without panic.\n\n— B.Like Active Lab",
+      "text_ru": "Лабораторная заметка #01.\n\nВолосам не нужна драма.\n\nИм нужны чёткие зоны,\nправильное натяжение\nи формула, смешанная без паники.\n\n— B.Like Active Lab",
       "tags": "#hairscience #colorist #BlondeFormula #Vlasa",
       "visual": "Vlasa writing formula in notebook. Camera zooms in. Cold lab light. Clean, deliberate."
     },
     "instagram": {
       "format": "Reels 6–10 сек",
       "caption": "Волосам не нужна драма.\n\nИм нужны чёткие зоны,\nправильное натяжение\nи формула, смешанная без паники.\n\n— Власа, B.Like Active Lab\n\n#колорист #формулаволос #уходзаволосами #блонд #власасмоленская",
-      "reels": "Власа чётко делит прядь на секции. Камера приближается к рукам. Никакого хаоса. Финал: «Волосам не нужна драма. Им нужны чёткие зоны.»",
-      "repost_alexander": true,
-      "status": "ready"
+      "reels": "Власа чётко делит прядь на секции. Камера приближается к рукам. Финал: «Волосам не нужна драма.»",
+      "repost_alexander": true, "status": "ready"
     }
   },
   {
-    "day": 2,
-    "date": "2026-06-21",
+    "day": 2, "date": "2026-06-21",
     "x": {
-      "id": "POST02",
-      "pillar": "LAB NOTES",
+      "id": "POST02", "pillar": "LAB NOTES",
       "text": "A formula without a timer is not a formula.\n\nIt is a prayer\nwith chemical potential.\n\n— B.Like Active Lab",
+      "text_ru": "Формула без таймера — не формула.\n\nЭто молитва\nс химическим потенциалом.\n\n— B.Like Active Lab",
       "tags": "#colorformula #haircolor #formuladiscipline #Vlasa",
       "visual": "Timer set on lab bench next to mixing bowl. Clean setup. No chaos."
     },
     "instagram": {
       "format": "Reels / фото с текстом",
       "caption": "Власа взвесила «чуть-чуть».\n\nВышло 4.7 грамма.\nФормула теперь под следствием.\n\n— Власа, B.Like Active Lab\n\n#формулаволос #колорист #точность #власасмоленская",
-      "reels": "Весы. На экране: 4.7g. Власа смотрит на весы, потом в камеру. Выражение: «вот именно». Весы пикают.",
-      "repost_alexander": false,
-      "status": "pending"
+      "reels": "Весы. На экране: 4.7g. Власа смотрит на весы, потом в камеру. Весы пикают.",
+      "repost_alexander": false, "status": "pending"
     }
   },
   {
-    "day": 3,
-    "date": "2026-06-22",
+    "day": 3, "date": "2026-06-22",
     "x": {
-      "id": "POST03",
-      "pillar": "MYTH AUTOPSY",
+      "id": "POST03", "pillar": "MYTH AUTOPSY",
       "text": "Myth autopsy #01.\n\n'More active ingredient = better result.'\n\nThe strand disagrees.\n\nEvery time.\n\n— B.Like Active Lab",
+      "text_ru": "Мифопсия #01.\n\n«Больше активного ингредиента = лучше результат.»\n\nПрядь не согласна.\n\nКаждый раз.\n\n— B.Like Active Lab",
       "tags": "#hairscience #activeingedients #BlondeFormula #MythAutopsy",
       "visual": "Vlasa holds strand. Lab microscope in background. Expression: skeptical and precise."
     },
     "instagram": {
       "format": "Карусель (3 слайда)",
       "caption": "Колор-борд — не каприз.\n\nЭто контролируемая среда.\n\nБез него ты делаешь химию на движущейся, мокрой, непредсказуемой поверхности.\n\nЭто называется импровизация.\nВласа не рекомендует.\n\n— Власа, B.Like Active Lab\n\n#колорист #колорборд #уходзаволосами #блонд #власасмоленская",
-      "reels": "Власа медленно кладёт прядь на колор-борд. Чисто. Аккуратно. Руки в чёрных перчатках. Финал: «Это называется импровизация.»",
-      "repost_alexander": true,
-      "status": "pending"
+      "reels": "Власа медленно кладёт прядь на колор-борд. Руки в чёрных перчатках. Финал: «Это называется импровизация.»",
+      "repost_alexander": true, "status": "pending"
     }
   },
   {
-    "day": 4,
-    "date": "2026-06-23",
+    "day": 4, "date": "2026-06-23",
     "x": {
-      "id": "POST04",
-      "pillar": "MYTH AUTOPSY",
+      "id": "POST04", "pillar": "MYTH AUTOPSY",
       "text": "Myth autopsy #02.\n\nKeratin fills.\n\nIt does not repair.\n\nThe difference matters.\nThe strand knows.\n\n— B.Like Active Lab",
+      "text_ru": "Мифопсия #02.\n\nКератин заполняет.\n\nОн не восстанавливает.\n\nРазница важна.\nПрядь знает.\n\n— B.Like Active Lab",
       "tags": "#keratin #hairrepair #hairscience #MythAutopsy",
-      "visual": "Two small containers: one labeled FILLS, one labeled DOES NOT REPAIR. Vlasa's gloved hand points. Lab setting."
+      "visual": "Two containers: FILLS vs DOES NOT REPAIR. Vlasa's gloved hand points. Lab setting."
     },
     "instagram": {
       "format": "Карусель (миф-аутопсия)",
       "caption": "Больше активного ≠ лучше результат.\n\nПрядь не согласна.\nПрядь всегда права.\n\nМИФ-АУТОПСИЯ #01\n\n— Власа, B.Like Active Lab\n\n#мифыоволосах #колорист #уходзаволосами #власасмоленская",
-      "reels": "Текст на экране: «МИФ: Больше активного = лучше». Власа медленно качает головой. Берёт прядь. Финал: «Прядь не согласна. Дело открыто.»",
-      "repost_alexander": true,
-      "status": "pending"
+      "reels": "Текст на экране: «МИФ: Больше активного = лучше». Власа медленно качает головой. Финал: «Прядь не согласна. Дело открыто.»",
+      "repost_alexander": true, "status": "pending"
     }
   },
   {
-    "day": 5,
-    "date": "2026-06-24",
+    "day": 5, "date": "2026-06-24",
     "x": {
-      "id": "POST05",
-      "pillar": "MYTH AUTOPSY",
+      "id": "POST05", "pillar": "MYTH AUTOPSY",
       "text": "Myth autopsy #03.\n\nA hair mask will fix the damage.\n\nA mask is not a surgeon.\n\nIt is a very good bandage.\n\n— B.Like Active Lab",
+      "text_ru": "Мифопсия #03.\n\nМаска для волос исправит повреждения.\n\nМаска — не хирург.\n\nОна очень хороший бинт.\n\n— B.Like Active Lab",
       "tags": "#hairmask #haircare #MythAutopsy #Vlasa",
       "visual": "Vlasa holding a mask jar, looking at it with surgical skepticism. Lab light."
     },
     "instagram": {
       "format": "Reels / сторис",
       "caption": "Власа подала официальную жалобу на фен.\n\nОснование: тепловая агрессия без согласия.\nВещественное доказательство: кутикула.\nПриговор: минимальная мощность. Диффузор.\n\n— Власа, B.Like Active Lab\n\n#уходзаволосами #колорист #фен #власасмоленская",
-      "reels": "Власа держит лист бумаги — «ЖАЛОБА». Кивает, подписывает, кладёт рядом с феном. Финал: фен лежит рядом. Молча.",
-      "repost_alexander": false,
-      "status": "pending"
+      "reels": "Власа держит лист бумаги — «ЖАЛОБА». Кивает, подписывает, кладёт рядом с феном. Молча.",
+      "repost_alexander": false, "status": "pending"
     }
   },
   {
-    "day": 6,
-    "date": "2026-06-25",
+    "day": 6, "date": "2026-06-25",
     "x": {
-      "id": "POST06",
-      "pillar": "LAB NOTES",
+      "id": "POST06", "pillar": "LAB NOTES",
       "text": "Vlasa weighed 'a little bit.'\n\nIt was 4.7 grams.\n\nThe formula is now under investigation.\n\n— B.Like Active Lab",
+      "text_ru": "Власа взвесила «немного».\n\nВышло 4.7 грамма.\n\nФормула теперь под следствием.\n\n— B.Like Active Lab",
       "tags": "#hairformula #colorist #formuladiscipline #Vlasa",
       "visual": "Digital scale showing 4.7g. Vlasa's gloved hand. Small measuring cup. Precise, clinical."
     },
     "instagram": {
       "format": "Фото / цитата",
       "caption": "Весы — не для перфекционистов.\n\nОни для тех, кто хочет\nтот же результат — дважды.\n\n— Власа, B.Like Active Lab\n\n#колорист #формулаволос #точность #власасмоленская",
-      "reels": "Крупный план — цифровые весы, точное значение. Власа смотрит в камеру. Тишина работает.",
-      "repost_alexander": true,
-      "status": "pending"
+      "reels": "Крупный план — цифровые весы. Власа смотрит в камеру. Тишина работает.",
+      "repost_alexander": true, "status": "pending"
     }
   },
   {
-    "day": 7,
-    "date": "2026-06-26",
+    "day": 7, "date": "2026-06-26",
     "x": {
-      "id": "POST07",
-      "pillar": "VLASA'S LAB LIFE",
+      "id": "POST07", "pillar": "VLASA'S LAB LIFE",
       "text": "Vlasa conducted an interview with the color brush.\n\nThe brush refused to comment on uneven pressure.\nThe strand was called as a witness.\nThe results are being reviewed.\n\n— B.Like Active Lab",
+      "text_ru": "Власа провела интервью с кистью для окрашивания.\n\nКисть отказалась комментировать неравномерное давление.\nПрядь вызвали как свидетеля.\nРезультаты изучаются.\n\n— B.Like Active Lab",
       "tags": "#colorbrush #colorist #haircolor #Vlasa",
-      "visual": "Vlasa holding brush at \"interview angle\" — like a microphone. Small lab spotlight. Brush: suspicious."
+      "visual": "Vlasa holding brush at interview angle — like a microphone. Small lab spotlight. Brush: suspicious."
     },
     "instagram": {
       "format": "Карусель (миф-аутопсия)",
       "caption": "Кератин заполняет.\nОн не восстанавливает.\n\nРазница есть.\nВолосы знают.\n\nМИФ-АУТОПСИЯ #02\n\n— Власа, B.Like Active Lab\n\n#кератин #уходзаволосами #колорист #власасмоленская",
       "reels": "Власа показывает две ёмкости: «ЗАПОЛНЯЕТ» и «НЕ ВОССТАНАВЛИВАЕТ». Финал: «У Власы есть файл.»",
-      "repost_alexander": true,
-      "status": "pending"
+      "repost_alexander": true, "status": "pending"
     }
   },
   {
-    "day": 8,
-    "date": "2026-06-27",
+    "day": 8, "date": "2026-06-27",
     "x": {
-      "id": "POST08",
-      "pillar": "ONE TOOL, ONE REASON",
+      "id": "POST08", "pillar": "ONE TOOL, ONE REASON",
       "text": "The color board is not a luxury item.\n\nIt is a controlled environment.\n\nWithout it, you are doing chemistry\non a moving, wet, unpredictable surface.\n\nThat is called improvisation.\nVlasa does not recommend it.\n\n— B.Like Active Lab",
+      "text_ru": "Колор-борд — не предмет роскоши.\n\nЭто контролируемая среда.\n\nБез него ты делаешь химию\nна движущейся, мокрой, непредсказуемой поверхности.\n\nЭто называется импровизация.\nВласа не рекомендует.\n\n— B.Like Active Lab",
       "tags": "#colorboard #colorist #hairtool #BlondeFormula",
       "visual": "Vlasa placing strand on color board. Clean light. Deliberate motion. Black gloves."
     },
     "instagram": null
   },
   {
-    "day": 9,
-    "date": "2026-06-28",
+    "day": 9, "date": "2026-06-28",
     "x": {
-      "id": "POST09",
-      "pillar": "ONE TOOL, ONE REASON",
+      "id": "POST09", "pillar": "ONE TOOL, ONE REASON",
       "text": "The scale is not for perfectionists.\n\nIt is for people who want\nthe same result twice.\n\n— Vlasa, B.Like Active Lab",
+      "text_ru": "Весы — не для перфекционистов.\n\nОни для тех, кто хочет\nтот же результат дважды.\n\n— Власа, B.Like Active Lab",
       "tags": "#hairformula #scale #formuladiscipline #colorist",
       "visual": "Digital scale on lab table. Clean. Vlasa's gloved hand next to it. No mess."
     },
     "instagram": null
   },
   {
-    "day": 10,
-    "date": "2026-06-29",
+    "day": 10, "date": "2026-06-29",
     "x": {
-      "id": "POST10",
-      "pillar": "VLASA'S LAB LIFE",
+      "id": "POST10", "pillar": "VLASA'S LAB LIFE",
       "text": "Vlasa filed a formal complaint against the blow dryer.\n\nCharge: thermal aggression without consent.\nEvidence: the cuticle layer.\n\nSentence: lowest setting.\nDiffuser attachment.\nMandatory pause every 90 seconds.\n\nCase closed.\n\n— B.Like Active Lab",
+      "text_ru": "Власа подала официальную жалобу на фен.\n\nОбвинение: тепловая агрессия без согласия.\nДоказательство: слой кутикулы.\n\nПриговор: минимальный режим.\nДиффузорная насадка.\nОбязательная пауза каждые 90 секунд.\n\nДело закрыто.\n\n— B.Like Active Lab",
       "tags": "#blowdryer #hairheat #hairscience #Vlasa",
-      "visual": "Vlasa with a small paper \"complaint form\" next to a blow dryer on lab table. Deadpan serious expression."
+      "visual": "Vlasa with complaint form next to a blow dryer on lab table. Deadpan serious expression."
     },
     "instagram": null
   }
