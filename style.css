@@ -91,12 +91,11 @@ body[data-char="alexander"]  { --accent: #fbbf24; }
 
 /* ── HERO BANNER ── */
 .hero-banner {
-  position: relative; width: 100%; height: 280px;
+  position: relative; width: 100%;
   overflow: hidden; background: #0d0d0d;
 }
 .hero-img {
-  width: 100%; height: 100%;
-  object-fit: cover; object-position: center center;
+  width: 100%; height: auto;
   display: block; transition: opacity 0.4s;
 }
 .hero-overlay {
