@@ -17,7 +17,7 @@
     </div>
     <div class="header-controls">
       <button class="btn-lang" id="btn-lang" onclick="toggleLang()" title="Перевод">EN</button>
-      <button class="btn-tiktok" onclick="openTokenModal()" title="TikTok токены">🎵</button>
+
     </div>
     <div class="header-date" id="header-date"><strong>—</strong></div>
   </header>
@@ -57,13 +57,6 @@
     </button>
   </nav>
 
-  <!-- TIKTOK TOKEN MODAL -->
-  <div class="modal-overlay" id="token-modal" style="display:none" onclick="closeTokenModal(event)">
-    <div class="modal-box" onclick="event.stopPropagation()">
-      <div class="modal-header">
-        <span>🎵 TikTok Токены</span>
-        <button class="modal-close" onclick="closeTokenModal()">✕</button>
-      </div>
       <div class="modal-body">
         <a class="btn btn-primary" href="https://www.tiktok.com/creator#/analytics" target="_blank" rel="noopener" style="display:flex;margin-bottom:14px">
           Открыть TikTok Creator Center ↗

@@ -11,8 +11,6 @@ let currentLang = 'en';
 let allPosts = [];
 let allTasks = {};
 const taskState = {};
-let tokenHistory = [];
-try { tokenHistory = JSON.parse(localStorage.getItem('blike_tokens') || '[]'); } catch(e) {}
 
 // ── CHARACTERS ────────────────────────────────
 const CHARS = {
@@ -340,50 +338,6 @@ function toggleTask(id) {
     const el = document.getElementById('cats-count');
     if (el) el.textContent = `${done}/${allTasks.cats.length}`;
   }
-}
-
-// ── TIKTOK TOKEN MODAL ────────────────────────
-function openTokenModal() {
-  renderTokenHistory();
-  document.getElementById('token-modal').style.display = 'flex';
-  setTimeout(() => document.getElementById('token-input')?.focus(), 100);
-}
-
-function closeTokenModal(e) {
-  if (!e || e.target === document.getElementById('token-modal')) {
-    document.getElementById('token-modal').style.display = 'none';
-  }
-}
-
-function saveToken() {
-  const input = document.getElementById('token-input');
-  const val = parseInt(input.value);
-  if (isNaN(val) || val < 0) return;
-  const today = new Date();
-  const entry = {
-    date: `${today.getDate()}.${today.getMonth()+1}.${today.getFullYear()}`,
-    count: val
-  };
-  tokenHistory.unshift(entry);
-  if (tokenHistory.length > 10) tokenHistory = tokenHistory.slice(0, 10);
-  localStorage.setItem('blike_tokens', JSON.stringify(tokenHistory));
-  input.value = '';
-  renderTokenHistory();
-}
-
-function renderTokenHistory() {
-  const el = document.getElementById('token-history');
-  if (!el) return;
-  if (tokenHistory.length === 0) {
-    el.innerHTML = '<div style="color:var(--text-muted);font-size:12px;text-align:center;padding:8px 0">История пустая</div>';
-    return;
-  }
-  el.innerHTML = tokenHistory.map(e =>
-    `<div class="token-row">
-      <span class="token-row-date">${e.date}</span>
-      <span class="token-row-count">${e.count.toLocaleString()}</span>
-    </div>`
-  ).join('');
 }
 
 // ── COPY HELPERS ──────────────────────────────

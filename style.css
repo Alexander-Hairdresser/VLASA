@@ -78,14 +78,6 @@ body[data-char="alexander"]  { --accent: #fbbf24; }
 }
 .btn-lang:active { transform: scale(0.95); }
 
-.btn-tiktok {
-  width: 32px; height: 32px; border-radius: 50%;
-  background: var(--surface3); border: 1px solid var(--border);
-  font-size: 15px; cursor: pointer; display: flex;
-  align-items: center; justify-content: center;
-  transition: all 0.15s;
-}
-.btn-tiktok:active { transform: scale(0.9); }
 
 .header-date {
   font-size: 11px; color: var(--text-dim);
@@ -348,42 +340,6 @@ main {
 }
 .nav-btn.active .nav-label { color: var(--accent); font-weight: 700; }
 .nav-btn.active .nav-icon { filter: drop-shadow(0 0 4px var(--accent)); }
-
-/* ── MODAL ── */
-.modal-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.7);
-  z-index: 300; display: flex; align-items: flex-end;
-  justify-content: center; padding: 0;
-}
-.modal-box {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: 14px 14px 0 0; width: 100%; max-width: 520px;
-  padding: 0 0 32px;
-}
-.modal-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 16px 16px 12px; font-size: 15px; font-weight: 700;
-  border-bottom: 1px solid var(--border);
-}
-.modal-close {
-  background: none; border: none; color: var(--text-dim);
-  font-size: 18px; cursor: pointer; padding: 4px;
-}
-.modal-body { padding: 16px; }
-.token-input {
-  flex: 1; background: var(--surface2); border: 1px solid var(--border);
-  border-radius: var(--radius-sm); padding: 10px 12px; font-size: 14px;
-  color: var(--text); outline: none; min-width: 0;
-}
-.token-input:focus { border-color: var(--accent); }
-.token-row {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 7px 0; border-bottom: 1px solid var(--border);
-  font-size: 13px;
-}
-.token-row:last-child { border-bottom: none; }
-.token-row-date { color: var(--text-dim); }
-.token-row-count { color: var(--accent); font-weight: 700; font-size: 15px; }
 
 /* ── FOOTER ── */
 .footer {
