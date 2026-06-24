@@ -3,6 +3,7 @@
    ============================================= */
 
 const BASE_DATE = new Date('2026-06-20');
+const HIGGSFIELD_URL = 'https://higgsfield.ai';
 
 // ── STATE ─────────────────────────────────────
 let currentChar = 'vlasa-lab';
@@ -10,6 +11,8 @@ let currentLang = 'en';
 let allPosts = [];
 let allTasks = {};
 const taskState = {};
+let tokenHistory = [];
+try { tokenHistory = JSON.parse(localStorage.getItem('blike_tokens') || '[]'); } catch(e) {}
 
 // ── CHARACTERS ────────────────────────────────
 const CHARS = {
@@ -17,7 +20,7 @@ const CHARS = {
   'vlasa-hair': { emoji: '✂️', name: 'Власа — Парикмахер', tagline: 'Salon Mode', heroPos: 'center 20%' },
   'cats':       { emoji: '🐱', name: 'Уголёк & Огонёк', tagline: 'Warehouse Reviews', heroPos: 'center 30%' },
   'products':   { emoji: '🛍', name: 'B.Like Products', tagline: 'Продукты', heroPos: 'center 25%' },
-  'alexander':  { emoji: '👑', name: 'Александр Ром', tagline: 'B.Like Luxury', heroPos: 'center 20%' },
+  'alexander':  { emoji: '⚡', name: 'Александр Ром', tagline: 'B.Like Luxury', heroPos: 'center 20%' },
 };
 
 // ── INIT ──────────────────────────────────────
@@ -60,11 +63,11 @@ function renderVlasaLab(dayIndex, container) {
   html += `<div id="sprint-section">${sprintBarHTML(dayIndex + 1, allPosts.length)}</div>`;
 
   // Today X
-  html += `<div class="section-label">🐦 Сегодня в X / Twitter</div>`;
+  html += `<div class="section-label">Сегодня в X / Twitter</div>`;
   html += `<div id="today-x">${todayXHTML(todayPost, lang)}</div>`;
 
   // Today IG
-  html += `<div class="section-label">📸 Сегодня в Instagram</div>`;
+  html += `<div class="section-label">Сегодня в Instagram</div>`;
   html += `<div id="today-ig">${todayIGHTML(todayPost)}</div>`;
 
   // Tomorrow
@@ -80,6 +83,8 @@ function renderVlasaLab(dayIndex, container) {
   // Cats accordion
   html += `<div id="cats-section">${catsHTML()}</div>`;
 
+  // Higgsfield
+  html += `<div class="hixel-section"><a class="btn-hixel" href="${HIGGSFIELD_URL}" target="_blank" rel="noopener">🎬 Открыть Higgsfield</a></div>`;
 
   // Footer
   html += `<footer class="footer">B.Like Active Lab · Sprint 01 · v2</footer>`;
@@ -151,7 +156,6 @@ function todayXHTML(post, lang) {
   const text = (lang === 'ru' && x.text_ru) ? x.text_ru : x.text;
   return `<div class="card">
     <div class="card-header">
-      <span class="card-icon">🐦</span>
       <span class="card-title">X / Twitter</span>
       <span class="card-badge">${x.id}</span>
     </div>
@@ -174,7 +178,6 @@ function todayIGHTML(post) {
   const ig = post.instagram;
   return `<div class="card">
     <div class="card-header">
-      <span class="card-icon">📸</span>
       <span class="card-title">Instagram</span>
       <span class="card-badge ${ig.status==='ready'?'ready':''}">${ig.status==='ready'?'✓ Готово':'⬜ Pending'}</span>
     </div>
@@ -226,7 +229,6 @@ function tasksHTML() {
   const done = allTasks.daily.filter(t => taskState[t.id]).length;
   return `<div class="acc-block">
     <button class="acc-trigger" onclick="toggleAcc('acc-daily')" aria-expanded="true">
-      <span class="acc-trigger-icon">📋</span>
       <span class="acc-trigger-label">Задачи на сегодня</span>
       <span class="acc-trigger-count" id="daily-count">${done}/${allTasks.daily.length}</span>
       <span class="acc-trigger-arrow">▾</span>
@@ -253,7 +255,6 @@ function catsHTML() {
   const done = allTasks.cats.filter(t => taskState[t.id]).length;
   return `<div class="acc-block">
     <button class="acc-trigger" onclick="toggleAcc('acc-cats')" aria-expanded="false" style="color:var(--red)">
-      <span class="acc-trigger-icon">🐱</span>
       <span class="acc-trigger-label" style="color:var(--red)">Cats / Warehouse Reviews</span>
       <span class="acc-trigger-count" id="cats-count">${done}/${allTasks.cats.length}</span>
       <span class="acc-trigger-arrow">▾</span>
@@ -281,7 +282,6 @@ function switchChar(char) {
   const c = CHARS[char] || CHARS['vlasa-lab'];
   document.getElementById('char-name').textContent = c.name;
   document.getElementById('hero-tagline').textContent = c.tagline;
-  const hn = document.getElementById('hero-name'); if(hn) hn.textContent = c.name;
   document.getElementById('hero-img').style.objectPosition = c.heroPos;
   // Re-render
   const today = new Date(); today.setHours(0,0,0,0);
@@ -336,6 +336,50 @@ function toggleTask(id) {
     const el = document.getElementById('cats-count');
     if (el) el.textContent = `${done}/${allTasks.cats.length}`;
   }
+}
+
+// ── TIKTOK TOKEN MODAL ────────────────────────
+function openTokenModal() {
+  renderTokenHistory();
+  document.getElementById('token-modal').style.display = 'flex';
+  setTimeout(() => document.getElementById('token-input')?.focus(), 100);
+}
+
+function closeTokenModal(e) {
+  if (!e || e.target === document.getElementById('token-modal')) {
+    document.getElementById('token-modal').style.display = 'none';
+  }
+}
+
+function saveToken() {
+  const input = document.getElementById('token-input');
+  const val = parseInt(input.value);
+  if (isNaN(val) || val < 0) return;
+  const today = new Date();
+  const entry = {
+    date: `${today.getDate()}.${today.getMonth()+1}.${today.getFullYear()}`,
+    count: val
+  };
+  tokenHistory.unshift(entry);
+  if (tokenHistory.length > 10) tokenHistory = tokenHistory.slice(0, 10);
+  localStorage.setItem('blike_tokens', JSON.stringify(tokenHistory));
+  input.value = '';
+  renderTokenHistory();
+}
+
+function renderTokenHistory() {
+  const el = document.getElementById('token-history');
+  if (!el) return;
+  if (tokenHistory.length === 0) {
+    el.innerHTML = '<div style="color:var(--text-muted);font-size:12px;text-align:center;padding:8px 0">История пустая</div>';
+    return;
+  }
+  el.innerHTML = tokenHistory.map(e =>
+    `<div class="token-row">
+      <span class="token-row-date">${e.date}</span>
+      <span class="token-row-count">${e.count.toLocaleString()}</span>
+    </div>`
+  ).join('');
 }
 
 // ── COPY HELPERS ──────────────────────────────
