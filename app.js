@@ -2,25 +2,36 @@
    B.LIKE DASHBOARD v2 — app.js
    ============================================= */
 
-// ── CALENDAR CONFIG ────────────────────────────
-// Вставь сюда ссылку на опубликованный Google Sheet в формате CSV:
+// ── CALENDAR CONFIG ─────────────────────────────────────────────
+// Вставь сюда ссылку на опубликованный Google Sheet (формат CSV):
 // Таблица → Файл → Опубликовать в интернете → Формат: CSV → Лист: Dashboard_Source
 // Пример: https://docs.google.com/spreadsheets/d/XXXXX/gviz/tq?tqx=out:csv&sheet=Dashboard_Source
 const VLASA_CONTENT_SOURCE_URL = '';
 
+// Интервал авто-обновления данных (мс). 300000 = 5 минут
+const AUTO_REFRESH_MS = 300000;
+
 const BASE_DATE    = new Date('2026-06-20');
 const HIGGSFIELD_URL = 'https://higgsfield.ai';
 
-// ── STATE ─────────────────────────────────────
-let currentChar = 'vlasa-lab';
-let currentLang = 'en';
-let allPosts    = [];
-let allTasks    = {};
-let allCalendar = [];
+// ── STATE ──────────────────────────────────────────────────────
+let currentChar    = 'vlasa-lab';
+let currentLang    = 'en';
+let allPosts       = [];
+let allTasks       = {};
+let allCalendar    = [];
 let calendarFilter = 'all';
-const taskState = {};
+const taskState    = {};
 
-// ── CHARACTERS ────────────────────────────────
+// Статус источника данных
+let calStatus = {
+  ok:           true,    // данные загружены (из любого источника)
+  isLoading:    false,   // идёт запрос прямо сейчас
+  lastUpdate:   null,    // Date последнего успешного получения
+  usingFallback:false,   // true = основной источник не ответил, используем TSV
+};
+
+// ── CHARACTERS ─────────────────────────────────────────────────
 const CHARS = {
   'vlasa-lab':  { emoji:'🧪', name:'Власа Смоленская', tagline:'B.Like Active Lab', heroPos:'center 25%' },
   'vlasa-hair': { emoji:'✂️', name:'Власа — Парикмахер', tagline:'Salon Mode',        heroPos:'center 20%' },
@@ -29,9 +40,9 @@ const CHARS = {
   'alexander':  { emoji:'⚡', name:'Александр Ром',     tagline:'B.Like Luxury',      heroPos:'center 20%' },
 };
 
-// ── INIT ──────────────────────────────────────
+// ── INIT ────────────────────────────────────────────────────────
 async function init() {
-  const today = new Date(); today.setHours(0,0,0,0);
+  const today    = new Date(); today.setHours(0,0,0,0);
   const dayIndex = Math.floor((today - BASE_DATE) / 86400000);
   renderHeader(today, dayIndex + 1);
 
@@ -41,40 +52,114 @@ async function init() {
     loadCalendarData(),
   ]);
 
-  allPosts    = postsRes.status === 'fulfilled'  ? postsRes.value  : [];
-  allTasks    = tasksRes.status === 'fulfilled'  ? tasksRes.value  : {};
-  allCalendar = calRes.status   === 'fulfilled'  ? calRes.value    : [];
+  allPosts    = postsRes.status === 'fulfilled' ? postsRes.value : [];
+  allTasks    = tasksRes.status === 'fulfilled' ? tasksRes.value : {};
+  allCalendar = calRes.status   === 'fulfilled' ? calRes.value  : [];
 
   renderPage(dayIndex);
+
+  // Авто-обновление каждые AUTO_REFRESH_MS
+  if (VLASA_CONTENT_SOURCE_URL) {
+    setInterval(refreshCalendarData, AUTO_REFRESH_MS);
+  }
 }
 
-// ── CALENDAR LOADING ──────────────────────────
+// ── CALENDAR LOADING ────────────────────────────────────────────
 async function loadCalendarData() {
+  // 1. Пробуем основной источник (Google Sheets)
   if (VLASA_CONTENT_SOURCE_URL) {
     try {
-      const res = await fetch(VLASA_CONTENT_SOURCE_URL);
+      // cache-bust параметр — чтобы браузер не брал устаревшую копию
+      const url = VLASA_CONTENT_SOURCE_URL +
+        (VLASA_CONTENT_SOURCE_URL.includes('?') ? '&' : '?') +
+        '_t=' + Date.now();
+      const res = await fetch(url);
       if (res.ok) {
         const text = await res.text();
         const items = parseCSV(text);
-        if (items.length > 0) return items;
+        if (items.length > 0) {
+          calStatus = { ok: true, isLoading: false, lastUpdate: new Date(), usingFallback: false };
+          return items;
+        }
       }
     } catch(e) { /* fall through */ }
+    // Основной источник недоступен → fallback
+    calStatus.usingFallback = true;
   }
+
+  // 2. Локальный TSV-fallback
   try {
     const res = await fetch('data/vlasa-content-calendar.tsv');
-    if (res.ok) return parseTSV(await res.text());
+    if (res.ok) {
+      const items = parseTSV(await res.text());
+      calStatus = {
+        ok:           !calStatus.usingFallback, // ok=false если основной не ответил
+        isLoading:    false,
+        lastUpdate:   new Date(),
+        usingFallback: calStatus.usingFallback,
+      };
+      return items;
+    }
   } catch(e) {}
+
+  calStatus = { ok: false, isLoading: false, lastUpdate: new Date(), usingFallback: true };
   return [];
 }
 
-// ── CSV PARSER (Google Sheets export) ─────────
+// ── REFRESH (вызывается кнопкой и setInterval) ───────────────────
+async function refreshCalendarData() {
+  if (calStatus.isLoading) return;
+  calStatus.isLoading = true;
+  updateRefreshUI();
+
+  const fresh = await loadCalendarData();
+  allCalendar = fresh;
+  calStatus.isLoading = false;
+
+  // Обновляем только зоны календаря — задачи и спринт не трогаем
+  const calEl = document.getElementById('cal-sections');
+  if (calEl) calEl.innerHTML = calendarInnerHTML();
+
+  updateRefreshUI();
+}
+
+// ── ОБНОВЛЯЕТ КНОПКУ / TIMESTAMP / БАННЕР ───────────────────────
+function updateRefreshUI() {
+  const btn    = document.getElementById('cal-refresh-btn');
+  const timeEl = document.getElementById('cal-last-update');
+  const banner = document.getElementById('cal-error-banner');
+
+  if (btn) {
+    btn.disabled   = calStatus.isLoading;
+    btn.textContent = calStatus.isLoading ? 'Загрузка...' : 'Обновить данные';
+    btn.classList.toggle('loading', calStatus.isLoading);
+  }
+
+  if (timeEl && calStatus.lastUpdate) {
+    const d  = calStatus.lastUpdate;
+    const hh = String(d.getHours()).padStart(2,'0');
+    const mm = String(d.getMinutes()).padStart(2,'0');
+    const dd = d.getDate();
+    const mo = String(d.getMonth()+1).padStart(2,'0');
+    timeEl.textContent = `Обновлено: ${hh}:${mm}, ${dd}.${mo}`;
+  }
+
+  if (banner) {
+    const show = calStatus.usingFallback && !!VLASA_CONTENT_SOURCE_URL;
+    banner.style.display = show ? 'flex' : 'none';
+  }
+}
+
+// ── CSV PARSER (Google Sheets export) ───────────────────────────
 function parseCSV(text) {
   const parseRow = line => {
     const fields = []; let field = '', inQ = false;
     for (let i = 0; i < line.length; i++) {
       const c = line[i];
-      if (c === '"') { if (inQ && line[i+1] === '"') { field += '"'; i++; } else inQ = !inQ; }
-      else if (c === ',' && !inQ) { fields.push(field.trim()); field = ''; }
+      if (c === '"') {
+        if (inQ && line[i+1] === '"') { field += '"'; i++; }
+        else inQ = !inQ;
+      } else if (c === ',' && !inQ) { fields.push(field.trim()); field = ''; }
       else field += c;
     }
     fields.push(field.trim()); return fields;
@@ -89,7 +174,7 @@ function parseCSV(text) {
   }).filter(i => i.postDate);
 }
 
-// ── TSV PARSER (local fallback) ───────────────
+// ── TSV PARSER (local fallback) ─────────────────────────────────
 function parseTSV(text) {
   const lines = text.trim().split('\n');
   if (!lines.length) return [];
@@ -101,32 +186,33 @@ function parseTSV(text) {
   }).filter(i => i.postDate);
 }
 
-// ── NORMALIZE ─────────────────────────────────
+// ── NORMALIZE ───────────────────────────────────────────────────
 function normalizeCalItem(row) {
   let d = (row.Post_Date || '').trim();
+  // DD.MM.YYYY → YYYY-MM-DD
   if (/^\d{2}\.\d{2}\.\d{4}$/.test(d)) {
     const [dd, mm, yy] = d.split('.'); d = `${yy}-${mm}-${dd}`;
   }
   return {
-    postDate:         d,
-    contentType:      row.Content_Type      || '',
-    episodeId:        row.Episode_ID        || '',
-    dashboardTitle:   row.Dashboard_Title   || '',
-    mainThesis:       row.Main_Thesis       || '',
-    punchlineOrHook:  row.Punchline_or_Hook || '',
-    visualSituation:  row.Visual_Situation  || '',
-    imagePromptShort: row.Image_Prompt_Short|| '',
-    grokVideo10s:     row.Grok_Video_10s    || '',
-    postRu:           row.Post_RU           || '',
-    postEn:           row.Post_EN           || '',
-    cta:              row.CTA               || '',
-    status:           row.Status            || '',
-    channel:          row.Channel           || '',
-    notes:            row.Notes             || '',
+    postDate:        d,
+    contentType:     row.Content_Type      || '',
+    episodeId:       row.Episode_ID        || '',
+    dashboardTitle:  row.Dashboard_Title   || '',
+    mainThesis:      row.Main_Thesis       || '',
+    punchlineOrHook: row.Punchline_or_Hook || '',
+    visualSituation: row.Visual_Situation  || '',
+    imagePromptShort:row.Image_Prompt_Short|| '',
+    grokVideo10s:    row.Grok_Video_10s    || '',
+    postRu:          row.Post_RU           || '',
+    postEn:          row.Post_EN           || '',
+    cta:             row.CTA               || '',
+    status:          row.Status            || '',
+    channel:         row.Channel           || '',
+    notes:           row.Notes             || '',
   };
 }
 
-// ── DATE HELPERS ──────────────────────────────
+// ── DATE HELPERS ────────────────────────────────────────────────
 function dateStr(offset = 0) {
   const d = new Date(); d.setDate(d.getDate() + offset);
   return d.toISOString().slice(0, 10);
@@ -143,38 +229,51 @@ function getNextSevenDays(typeFilter = 'all') {
   }).sort((a, b) => a.postDate.localeCompare(b.postDate));
 }
 
-// ── FIELD VALUE GUARD ──────────────────────────
-// Never show AI-invented text — if field is empty, show explicit prompt.
+// ── FIELD GUARD — никогда не придумываем текст ───────────────────
 const NEED_FILL = '<span class="cal-empty">Нужно заполнить в таблице</span>';
 function fval(v) { return (v && v.trim()) ? escHtml(v) : NEED_FILL; }
 
-// ── RENDER PAGE ───────────────────────────────
+// ── RENDER PAGE ─────────────────────────────────────────────────
 function renderPage(dayIndex) {
   const main = document.getElementById('main-content');
   if (currentChar === 'vlasa-lab') renderVlasaLab(dayIndex, main);
   else renderPlaceholder(main);
 }
 
-// ── VLASA LAB PAGE ────────────────────────────
+// ── VLASA LAB PAGE ───────────────────────────────────────────────
 function renderVlasaLab(dayIndex, container) {
   let html = '';
   html += `<div id="sprint-section">${sprintBarHTML(dayIndex + 1, allPosts.length || 30)}</div>`;
-  html += calendarSectionsHTML();
+  html += `<div id="cal-sections">${calendarInnerHTML()}</div>`;
   html += `<div class="section-label">Задачи</div>`;
   html += `<div id="tasks-section">${tasksHTML()}</div>`;
   html += `<div id="cats-section">${catsHTML()}</div>`;
   html += `<div class="hixel-section"><a class="btn-hixel" href="${HIGGSFIELD_URL}" target="_blank" rel="noopener">🎬 Открыть Higgsfield</a></div>`;
   html += `<footer class="footer">B.Like Active Lab · Sprint 01 · v2</footer>`;
   container.innerHTML = html;
+  // Обновляем статусные UI-элементы после рендера
+  updateRefreshUI();
 }
 
-// ── CALENDAR SECTIONS ─────────────────────────
-function calendarSectionsHTML() {
+// ── INNER HTML для #cal-sections (вызывается при рендере и рефреше)
+function calendarInnerHTML() {
   let html = '';
-  const todayItems    = getTodayContent();
-  const tomorrowItems = getTomorrowContent();
 
-  // Zone 1: Today
+  // ── Шапка секции: кнопка + timestamp ──
+  html += `<div class="cal-toolbar">
+    <button class="btn-refresh" id="cal-refresh-btn"
+      onclick="refreshCalendarData()">Обновить данные</button>
+    <span class="cal-timestamp" id="cal-last-update"></span>
+  </div>`;
+
+  // ── Баннер ошибки (скрыт по умолчанию) ──
+  html += `<div class="cal-error-banner" id="cal-error-banner" style="display:none">
+    <span class="cal-error-icon">⚠</span>
+    <span>Таблица временно недоступна. Показаны последние сохранённые данные.</span>
+  </div>`;
+
+  // ── Зона 1: Сегодня ──
+  const todayItems = getTodayContent();
   html += `<div class="section-label">Сегодня в лаборатории</div>`;
   if (!todayItems.length) {
     html += `<div class="cal-empty-state">На сегодня контент не запланирован</div>`;
@@ -182,7 +281,8 @@ function calendarSectionsHTML() {
     html += todayItems.map(item => calCardHTML(item)).join('');
   }
 
-  // Zone 2: Tomorrow
+  // ── Зона 2: Завтра ──
+  const tomorrowItems = getTomorrowContent();
   html += `<div class="section-label">Завтра в лаборатории</div>`;
   if (!tomorrowItems.length) {
     html += `<div class="cal-empty-state">На завтра контент не запланирован</div>`;
@@ -190,7 +290,7 @@ function calendarSectionsHTML() {
     html += tomorrowItems.map(item => calCardHTML(item, true)).join('');
   }
 
-  // Zone 3: Next 7 days
+  // ── Зона 3: Ближайшие 7 дней ──
   html += `<div class="section-label">Ближайшие публикации</div>`;
   html += filterBarHTML();
   html += `<div id="cal-7d-list" class="cal-week-wrap">${sevenDayListHTML('all')}</div>`;
@@ -198,15 +298,15 @@ function calendarSectionsHTML() {
   return html;
 }
 
-// ── CALENDAR CARD ─────────────────────────────
+// ── CALENDAR CARD ────────────────────────────────────────────────
 function calCardHTML(item, compact = false) {
-  const uid = `c${Date.now().toString(36)}${Math.random().toString(36).slice(2,5)}`;
-  const hasImgPrompt = item.imagePromptShort && item.imagePromptShort.trim();
-  const hasVidPrompt = item.grokVideo10s && item.grokVideo10s.trim();
-  const hasPostRu    = item.postRu && item.postRu.trim();
-  const hasPostEn    = item.postEn && item.postEn.trim();
+  const uid = 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2,5);
+  const hasImg = item.imagePromptShort && item.imagePromptShort.trim();
+  const hasVid = item.grokVideo10s     && item.grokVideo10s.trim();
+  const hasRu  = item.postRu           && item.postRu.trim();
+  const hasEn  = item.postEn           && item.postEn.trim();
 
-  const visualAccordion = !compact ? `
+  const visualAcc = !compact ? `
     <div class="cal-acc">
       <button class="cal-acc-trigger" onclick="toggleCalAcc('${uid}-vis')">
         Визуал <span class="cal-acc-arrow">▾</span>
@@ -224,14 +324,14 @@ function calCardHTML(item, compact = false) {
           <div class="cal-field-lbl">Промпт видео 10s</div>
           <div class="cal-field-val cal-prompt" id="${uid}-vid">${fval(item.grokVideo10s)}</div>
         </div>
-        ${hasImgPrompt||hasVidPrompt ? `<div class="btn-row" style="margin-top:8px">
-          ${hasImgPrompt?`<button class="btn btn-copy" onclick="copyText('${uid}-img',this)">📋 Промпт картинки</button>`:''}
-          ${hasVidPrompt?`<button class="btn btn-copy" onclick="copyText('${uid}-vid',this)">🎬 Промпт видео</button>`:''}
+        ${hasImg||hasVid ? `<div class="btn-row" style="margin-top:8px">
+          ${hasImg?`<button class="btn btn-copy" onclick="copyText('${uid}-img',this)">📋 Промпт картинки</button>`:''}
+          ${hasVid?`<button class="btn btn-copy" onclick="copyText('${uid}-vid',this)">🎬 Промпт видео</button>`:''}
         </div>` : ''}
       </div>
     </div>` : '';
 
-  const postAccordion = !compact ? `
+  const postAcc = !compact ? `
     <div class="cal-acc">
       <button class="cal-acc-trigger" onclick="toggleCalAcc('${uid}-post')">
         Пост <span class="cal-acc-arrow">▾</span>
@@ -245,9 +345,9 @@ function calCardHTML(item, compact = false) {
           <div class="cal-field-lbl">Post EN</div>
           <div class="cal-field-val cal-post-text" id="${uid}-en">${fval(item.postEn)}</div>
         </div>
-        ${hasPostRu||hasPostEn ? `<div class="btn-row" style="margin-top:8px">
-          ${hasPostRu?`<button class="btn btn-copy" onclick="copyText('${uid}-ru',this)">📋 RU</button>`:''}
-          ${hasPostEn?`<button class="btn btn-copy" onclick="copyText('${uid}-en',this)">📋 EN</button>`:''}
+        ${hasRu||hasEn ? `<div class="btn-row" style="margin-top:8px">
+          ${hasRu?`<button class="btn btn-copy" onclick="copyText('${uid}-ru',this)">📋 RU</button>`:''}
+          ${hasEn?`<button class="btn btn-copy" onclick="copyText('${uid}-en',this)">📋 EN</button>`:''}
         </div>` : ''}
       </div>
     </div>` : '';
@@ -255,9 +355,9 @@ function calCardHTML(item, compact = false) {
   return `<div class="cal-card">
     <div class="cal-card-header">
       ${typeBadge(item.contentType)}
-      ${item.episodeId?`<span class="cal-episode">${escHtml(item.episodeId)}</span>`:''}
-      ${item.channel?`<span class="cal-channel">${escHtml(item.channel)}</span>`:''}
-      ${item.status?`<span class="cal-status ${statusCls(item.status)}">${escHtml(item.status)}</span>`:''}
+      ${item.episodeId ? `<span class="cal-episode">${escHtml(item.episodeId)}</span>` : ''}
+      ${item.channel   ? `<span class="cal-channel">${escHtml(item.channel)}</span>`   : ''}
+      ${item.status    ? `<span class="cal-status ${statusCls(item.status)}">${escHtml(item.status)}</span>` : ''}
     </div>
     <div class="cal-card-title">${fval(item.dashboardTitle)}</div>
     <div class="cal-acc">
@@ -273,34 +373,33 @@ function calCardHTML(item, compact = false) {
           <div class="cal-field-lbl">Крючок / панчлайн</div>
           <div class="cal-field-val cal-hook">${fval(item.punchlineOrHook)}</div>
         </div>
-        ${item.cta?`<div class="cal-cta">${escHtml(item.cta)}</div>`:''}
+        ${item.cta ? `<div class="cal-cta">${escHtml(item.cta)}</div>` : ''}
       </div>
     </div>
-    ${visualAccordion}
-    ${postAccordion}
+    ${visualAcc}
+    ${postAcc}
   </div>`;
 }
 
-// ── TYPE BADGE ────────────────────────────────
+// ── TYPE BADGES ──────────────────────────────────────────────────
 const BADGE_MAP = {
-  'Мифопсия':'badge-myth','Продукт':'badge-product','Аксессуар':'badge-acc',
-  'Протокол':'badge-prot','Маска':'badge-mask','Q&A':'badge-qa',
-  'Backstage':'badge-back','Обучение':'badge-edu','Пост Власы':'badge-vlasa',
+  'Мифопсия':'badge-myth', 'Продукт':'badge-product', 'Аксессуар':'badge-acc',
+  'Протокол':'badge-prot', 'Маска':'badge-mask',       'Q&A':'badge-qa',
+  'Backstage':'badge-back','Обучение':'badge-edu',      'Пост Власы':'badge-vlasa',
 };
 function typeBadge(type) {
   if (!type) return '';
-  const cls = BADGE_MAP[type] || 'badge-def';
-  return `<span class="cal-badge ${cls}">${escHtml(type)}</span>`;
+  return `<span class="cal-badge ${BADGE_MAP[type]||'badge-def'}">${escHtml(type)}</span>`;
 }
 function statusCls(s) {
   const l = (s||'').toLowerCase();
   if (l.includes('ready')||l.includes('готов')) return 'status-ready';
   if (l.includes('draft')||l.includes('черн'))  return 'status-draft';
-  if (l.includes('done')||l.includes('опублик')) return 'status-done';
+  if (l.includes('done')||l.includes('опублик'))return 'status-done';
   return '';
 }
 
-// ── FILTER BAR ────────────────────────────────
+// ── FILTER BAR ───────────────────────────────────────────────────
 const FILTER_TYPES  = ['all','Мифопсия','Продукт','Аксессуар','Протокол','Маска','Q&A'];
 const FILTER_LABELS = { all:'Все','Мифопсия':'Мифопсии','Продукт':'Продукты',
   'Аксессуар':'Аксессуары','Протокол':'Протоколы','Маска':'Маски','Q&A':'Q&A' };
@@ -308,38 +407,42 @@ const FILTER_LABELS = { all:'Все','Мифопсия':'Мифопсии','Пр
 function filterBarHTML() {
   return `<div class="filter-bar">` +
     FILTER_TYPES.map(t =>
-      `<button class="filter-btn${calendarFilter===t?' active':''}" onclick="setCalFilter('${t}')">${FILTER_LABELS[t]}</button>`
+      `<button class="filter-btn${calendarFilter===t?' active':''}"
+        onclick="setCalFilter('${t}')">${FILTER_LABELS[t]}</button>`
     ).join('') + `</div>`;
 }
 
 function sevenDayListHTML(typeFilter) {
   const items = getNextSevenDays(typeFilter);
   if (!items.length) return `<div class="cal-empty-state">Публикаций не запланировано</div>`;
+  const MONTHS = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+  const WDAYS  = ['вс','пн','вт','ср','чт','пт','сб'];
   return items.map(item => {
-    const d = new Date(item.postDate);
-    const MONTHS = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
-    const WDAYS  = ['вс','пн','вт','ср','чт','пт','сб'];
-    const label  = isNaN(d) ? item.postDate : `${d.getDate()} ${MONTHS[d.getMonth()]} ${WDAYS[d.getDay()]}`;
+    const d   = new Date(item.postDate);
+    const lbl = isNaN(d) ? item.postDate : `${d.getDate()} ${MONTHS[d.getMonth()]} ${WDAYS[d.getDay()]}`;
     return `<div class="cal-row">
-      <span class="cal-row-date">${label}</span>
+      <span class="cal-row-date">${lbl}</span>
       ${typeBadge(item.contentType)}
-      <span class="cal-row-title">${item.dashboardTitle ? escHtml(item.dashboardTitle) : '<span class="cal-empty">—</span>'}</span>
-      ${item.status?`<span class="cal-row-status ${statusCls(item.status)}">${escHtml(item.status)}</span>`:''}
+      <span class="cal-row-title">${item.dashboardTitle
+        ? escHtml(item.dashboardTitle)
+        : '<span class="cal-empty">—</span>'}</span>
+      ${item.status
+        ? `<span class="cal-row-status ${statusCls(item.status)}">${escHtml(item.status)}</span>`
+        : ''}
     </div>`;
   }).join('');
 }
 
 function setCalFilter(type) {
   calendarFilter = type;
-  document.querySelectorAll('.filter-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.textContent.trim() === (FILTER_LABELS[type]||''));
-  });
+  document.querySelectorAll('.filter-btn').forEach(btn =>
+    btn.classList.toggle('active', btn.textContent.trim() === (FILTER_LABELS[type]||'')));
   const el = document.getElementById('cal-7d-list');
   if (el) el.innerHTML = sevenDayListHTML(type);
 }
 
 function toggleCalAcc(id) {
-  const body = document.getElementById(id);
+  const body    = document.getElementById(id);
   if (!body) return;
   const trigger = body.previousElementSibling;
   const isOpen  = body.classList.contains('open');
@@ -348,14 +451,16 @@ function toggleCalAcc(id) {
   if (arrow) arrow.style.transform = isOpen ? '' : 'rotate(180deg)';
 }
 
-// ── PLACEHOLDER PAGE ──────────────────────────
+// ── PLACEHOLDER PAGE ─────────────────────────────────────────────
 function renderPlaceholder(container) {
   const placeholders = {
-    'vlasa-hair': { emoji:'✂️', title:'Власа — Парикмахер', text:'Посты из жизни салона, закулисье мастера. Скоро.', link:null },
-    'cats':       { emoji:'🐱', title:'Уголёк & Огонёк',   text:'Уголёк проверяет отзывы. Огонёк молчит в коробке.',
-                    link:'../04_Content/Cats_Warehouse_Reviews/CATS_CASE_01_CHAIN.html', linkLabel:'📦 Case #01 — Карбоновый планшет' },
-    'products':   { emoji:'🛍', title:'B.Like Products',   text:'Карточки продуктов, истории создания. В разработке.', link:null },
-    'alexander':  { emoji:'⚡', title:'Александр Ром',     text:'Личный бренд. Люкс. Преподавание. Основатель B.Like.', link:null },
+    'vlasa-hair': { emoji:'✂️', title:'Власа — Парикмахер', text:'Посты из жизни салона, закулисье мастера. Скоро.',
+      link:null },
+    'cats': { emoji:'🐱', title:'Уголёк & Огонёк', text:'Уголёк проверяет отзывы. Огонёк молчит в коробке.',
+      link:'../04_Content/Cats_Warehouse_Reviews/CATS_CASE_01_CHAIN.html',
+      linkLabel:'📦 Case #01 — Карбоновый планшет' },
+    'products': { emoji:'🛍', title:'B.Like Products', text:'Карточки продуктов, истории создания. В разработке.', link:null },
+    'alexander': { emoji:'⚡', title:'Александр Ром', text:'Личный бренд. Люкс. Преподавание. Основатель B.Like.', link:null },
   };
   const p = placeholders[currentChar] || {};
   container.innerHTML = `
@@ -363,12 +468,12 @@ function renderPlaceholder(container) {
       <div class="placeholder-emoji">${p.emoji||'✦'}</div>
       <div class="placeholder-title">${p.title||''}</div>
       <div class="placeholder-text">${p.text||''}</div>
-      ${p.link?`<a class="placeholder-link" href="${p.link}" target="_blank">${p.linkLabel}</a>`:''}
+      ${p.link ? `<a class="placeholder-link" href="${p.link}" target="_blank">${p.linkLabel}</a>` : ''}
     </div>
     <footer class="footer">B.Like Active Lab · v2</footer>`;
 }
 
-// ── HEADER ────────────────────────────────────
+// ── HEADER ───────────────────────────────────────────────────────
 function renderHeader(date, dayNum) {
   const days   = ['Воскресенье','Понедельник','Вторник','Среда','Четверг','Пятница','Суббота'];
   const months = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
@@ -377,7 +482,7 @@ function renderHeader(date, dayNum) {
   document.getElementById('header-day').textContent = `День ${dayNum}`;
 }
 
-// ── SPRINT BAR ────────────────────────────────
+// ── SPRINT BAR ───────────────────────────────────────────────────
 function sprintBarHTML(dayNum, total) {
   const pct = Math.min(100, Math.round((dayNum / total) * 100));
   return `<div class="sprint-bar">
@@ -389,7 +494,7 @@ function sprintBarHTML(dayNum, total) {
   </div>`;
 }
 
-// ── TASKS ─────────────────────────────────────
+// ── TASKS ────────────────────────────────────────────────────────
 function tasksHTML() {
   if (!allTasks.daily) return '';
   const items = allTasks.daily.map(t => taskItemHTML(t)).join('');
@@ -412,7 +517,7 @@ function taskItemHTML(t) {
   </li>`;
 }
 
-// ── CATS ──────────────────────────────────────
+// ── CATS ─────────────────────────────────────────────────────────
 function catsHTML() {
   if (!allTasks.cats) return '';
   const items = allTasks.cats.map(t => taskItemHTML(t)).join('');
@@ -434,7 +539,7 @@ function catsHTML() {
   </div>`;
 }
 
-// ── CHARACTER SWITCH ──────────────────────────
+// ── CHARACTER SWITCH ─────────────────────────────────────────────
 function switchChar(char) {
   currentChar = char;
   document.body.setAttribute('data-char', char);
@@ -448,16 +553,15 @@ function switchChar(char) {
   renderPage(dayIndex);
 }
 
-// ── TRANSLATE TOGGLE ──────────────────────────
+// ── LANGUAGE TOGGLE ──────────────────────────────────────────────
 function toggleLang() {
   currentLang = currentLang === 'en' ? 'ru' : 'en';
   const btn = document.getElementById('btn-lang');
   btn.textContent = currentLang === 'ru' ? 'RU' : 'EN';
   btn.classList.toggle('ru-active', currentLang === 'ru');
-  // Calendar shows both languages; no re-render needed
 }
 
-// ── ACCORDION ─────────────────────────────────
+// ── ACCORDION ────────────────────────────────────────────────────
 function toggleAcc(id) {
   const body = document.getElementById(id);
   if (!body) return;
@@ -467,7 +571,7 @@ function toggleAcc(id) {
   if (trigger) trigger.setAttribute('aria-expanded', !isOpen);
 }
 
-// ── TASKS TOGGLE ──────────────────────────────
+// ── TASK TOGGLE ──────────────────────────────────────────────────
 function toggleTask(id) {
   taskState[id] = !taskState[id];
   const item = document.getElementById('task-' + id);
@@ -476,17 +580,17 @@ function toggleTask(id) {
   item.querySelector('.task-check').textContent = taskState[id] ? '✓' : '';
   if (allTasks.daily) {
     const done = allTasks.daily.filter(t => taskState[t.id]).length;
-    const el = document.getElementById('daily-count');
+    const el   = document.getElementById('daily-count');
     if (el) el.textContent = `${done}/${allTasks.daily.length}`;
   }
   if (allTasks.cats) {
     const done = allTasks.cats.filter(t => taskState[t.id]).length;
-    const el = document.getElementById('cats-count');
+    const el   = document.getElementById('cats-count');
     if (el) el.textContent = `${done}/${allTasks.cats.length}`;
   }
 }
 
-// ── COPY HELPERS ──────────────────────────────
+// ── COPY HELPERS ─────────────────────────────────────────────────
 function copyText(elementId, btn) {
   const el = document.getElementById(elementId);
   if (!el) return;
@@ -508,15 +612,16 @@ function doCopy(text, btn) {
   });
 }
 
-// ── UTILS ─────────────────────────────────────
+// ── UTILS ────────────────────────────────────────────────────────
 function escHtml(s) {
-  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')
+                .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 function escAttr(s) {
   return (s||'').replace(/'/g,'&#39;').replace(/"/g,'&quot;').replace(/\n/g,'\\n');
 }
 
-// ── START ─────────────────────────────────────
+// ── START ────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   document.body.setAttribute('data-char', 'vlasa-lab');
   init();
