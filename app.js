@@ -23,6 +23,71 @@ let allCalendar    = [];
 let calendarFilter = 'all';
 const taskState    = {};
 
+// ── I18N ────────────────────────────────────────────────────────
+const I18N = {
+  en: {
+    today:      'Today in the lab',
+    tomorrow:   'Tomorrow in the lab',
+    upcoming:   'Upcoming posts',
+    noToday:    'No content scheduled for today',
+    noTomorrow: 'No content scheduled for tomorrow',
+    brief:      'Brief',
+    visual:     'Visual',
+    post:       'Post',
+    thesis:     'Main thesis',
+    hook:       'Hook / punchline',
+    scene:      'Visual scene',
+    imgPrompt:  'Image prompt',
+    vidPrompt:  'Video prompt 10s',
+    postRu:     'Post RU',
+    postEn:     'Post EN',
+    copyImg:    '📋 Image prompt',
+    copyVid:    '🎬 Video prompt',
+    copyRu:     '📋 RU',
+    copyEn:     '📋 EN',
+    refresh:    'Refresh data',
+    errorBanner:'Data temporarily unavailable. Showing last saved data.',
+    fAll:       'All',
+    fMif:       'Myth Autopsy',
+    fProd:      'Products',
+    fAcc:       'Accessories',
+    fProt:      'Protocols',
+    fMask:      'Masks',
+    fQA:        'Q&A',
+  },
+  ru: {
+    today:      'Сегодня в лаборатории',
+    tomorrow:   'Завтра в лаборатории',
+    upcoming:   'Ближайшие публикации',
+    noToday:    'На сегодня контент не запланирован',
+    noTomorrow: 'На завтра контент не запланирован',
+    brief:      'Кратко',
+    visual:     'Визуал',
+    post:       'Пост',
+    thesis:     'Главный тезис',
+    hook:       'Крючок / панчлайн',
+    scene:      'Визуальная сцена',
+    imgPrompt:  'Промпт картинка',
+    vidPrompt:  'Промпт видео 10s',
+    postRu:     'Пост RU',
+    postEn:     'Пост EN',
+    copyImg:    '📋 Промпт картинки',
+    copyVid:    '🎬 Промпт видео',
+    copyRu:     '📋 RU',
+    copyEn:     '📋 EN',
+    refresh:    'Обновить данные',
+    errorBanner:'Таблица временно недоступна. Показаны последние сохранённые данные.',
+    fAll:       'Все',
+    fMif:       'Мифопсии',
+    fProd:      'Продукты',
+    fAcc:       'Аксессуары',
+    fProt:      'Протоколы',
+    fMask:      'Маски',
+    fQA:        'Q&A',
+  }
+};
+function tr(key) { return (I18N[currentLang] || I18N.en)[key] || key; }
+
 // Статус источника данных
 let calStatus = {
   ok:           true,    // данные загружены (из любого источника)
@@ -271,36 +336,36 @@ function calendarInnerHTML() {
   // ── Шапка секции: кнопка + timestamp ──
   html += `<div class="cal-toolbar">
     <button class="btn-refresh" id="cal-refresh-btn"
-      onclick="refreshCalendarData()">Обновить данные</button>
+      onclick="refreshCalendarData()">${tr('refresh')}</button>
     <span class="cal-timestamp" id="cal-last-update"></span>
   </div>`;
 
-  // ── Баннер ошибки (скрыт по умолчанию) ──
+  // ── Error banner (hidden by default) ──
   html += `<div class="cal-error-banner" id="cal-error-banner" style="display:none">
     <span class="cal-error-icon">⚠</span>
-    <span>Таблица временно недоступна. Показаны последние сохранённые данные.</span>
+    <span>${tr('errorBanner')}</span>
   </div>`;
 
-  // ── Зона 1: Сегодня ──
+  // ── Zone 1: Today ──
   const todayItems = getTodayContent();
-  html += `<div class="section-label">Сегодня в лаборатории</div>`;
+  html += `<div class="section-label">${tr('today')}</div>`;
   if (!todayItems.length) {
-    html += `<div class="cal-empty-state">На сегодня контент не запланирован</div>`;
+    html += `<div class="cal-empty-state">${tr('noToday')}</div>`;
   } else {
     html += todayItems.map(item => calCardHTML(item)).join('');
   }
 
-  // ── Зона 2: Завтра ──
+  // ── Zone 2: Tomorrow ──
   const tomorrowItems = getTomorrowContent();
-  html += `<div class="section-label">Завтра в лаборатории</div>`;
+  html += `<div class="section-label">${tr('tomorrow')}</div>`;
   if (!tomorrowItems.length) {
-    html += `<div class="cal-empty-state">На завтра контент не запланирован</div>`;
+    html += `<div class="cal-empty-state">${tr('noTomorrow')}</div>`;
   } else {
-    html += tomorrowItems.map(item => calCardHTML(item, true)).join('');
+    html += tomorrowItems.map(item => calCardHTML(item)).join('');
   }
 
-  // ── Зона 3: Ближайшие 7 дней ──
-  html += `<div class="section-label">Ближайшие публикации</div>`;
+  // ── Zone 3: Upcoming ──
+  html += `<div class="section-label">${tr('upcoming')}</div>`;
   html += filterBarHTML();
   html += `<div id="cal-7d-list" class="cal-week-wrap">${sevenDayListHTML('all')}</div>`;
 
@@ -318,24 +383,24 @@ function calCardHTML(item, compact = false) {
   const visualAcc = !compact ? `
     <div class="cal-acc">
       <button class="cal-acc-trigger" onclick="toggleCalAcc('${uid}-vis')">
-        Визуал <span class="cal-acc-arrow">▾</span>
+        ${tr('visual')} <span class="cal-acc-arrow">▾</span>
       </button>
       <div class="cal-acc-body" id="${uid}-vis">
         <div class="cal-field">
-          <div class="cal-field-lbl">Визуальная сцена</div>
+          <div class="cal-field-lbl">${tr('scene')}</div>
           <div class="cal-field-val">${fval(item.visualSituation)}</div>
         </div>
         <div class="cal-field">
-          <div class="cal-field-lbl">Промпт картинка</div>
+          <div class="cal-field-lbl">${tr('imgPrompt')}</div>
           <div class="cal-field-val cal-prompt" id="${uid}-img">${fval(item.imagePromptShort)}</div>
         </div>
         <div class="cal-field">
-          <div class="cal-field-lbl">Промпт видео 10s</div>
+          <div class="cal-field-lbl">${tr('vidPrompt')}</div>
           <div class="cal-field-val cal-prompt" id="${uid}-vid">${fval(item.grokVideo10s)}</div>
         </div>
         ${hasImg||hasVid ? `<div class="btn-row" style="margin-top:8px">
-          ${hasImg?`<button class="btn btn-copy" onclick="copyText('${uid}-img',this)">📋 Промпт картинки</button>`:''}
-          ${hasVid?`<button class="btn btn-copy" onclick="copyText('${uid}-vid',this)">🎬 Промпт видео</button>`:''}
+          ${hasImg?`<button class="btn btn-copy" onclick="copyText('${uid}-img',this)">${tr('copyImg')}</button>`:''}
+          ${hasVid?`<button class="btn btn-copy" onclick="copyText('${uid}-vid',this)">${tr('copyVid')}</button>`:''}
         </div>` : ''}
       </div>
     </div>` : '';
@@ -343,20 +408,20 @@ function calCardHTML(item, compact = false) {
   const postAcc = !compact ? `
     <div class="cal-acc">
       <button class="cal-acc-trigger" onclick="toggleCalAcc('${uid}-post')">
-        Пост <span class="cal-acc-arrow">▾</span>
+        ${tr('post')} <span class="cal-acc-arrow">▾</span>
       </button>
       <div class="cal-acc-body" id="${uid}-post">
         <div class="cal-field">
-          <div class="cal-field-lbl">Post RU</div>
+          <div class="cal-field-lbl">${tr('postRu')}</div>
           <div class="cal-field-val cal-post-text" id="${uid}-ru">${fval(item.postRu)}</div>
         </div>
         <div class="cal-field">
-          <div class="cal-field-lbl">Post EN</div>
+          <div class="cal-field-lbl">${tr('postEn')}</div>
           <div class="cal-field-val cal-post-text" id="${uid}-en">${fval(item.postEn)}</div>
         </div>
         ${hasRu||hasEn ? `<div class="btn-row" style="margin-top:8px">
-          ${hasRu?`<button class="btn btn-copy" onclick="copyText('${uid}-ru',this)">📋 RU</button>`:''}
-          ${hasEn?`<button class="btn btn-copy" onclick="copyText('${uid}-en',this)">📋 EN</button>`:''}
+          ${hasRu?`<button class="btn btn-copy" onclick="copyText('${uid}-ru',this)">${tr('copyRu')}</button>`:''}
+          ${hasEn?`<button class="btn btn-copy" onclick="copyText('${uid}-en',this)">${tr('copyEn')}</button>`:''}
         </div>` : ''}
       </div>
     </div>` : '';
@@ -371,15 +436,15 @@ function calCardHTML(item, compact = false) {
     <div class="cal-card-title">${fval(item.dashboardTitle)}</div>
     <div class="cal-acc">
       <button class="cal-acc-trigger" onclick="toggleCalAcc('${uid}-brief')">
-        Кратко <span class="cal-acc-arrow" style="transform:rotate(180deg)">▾</span>
+        ${tr('brief')} <span class="cal-acc-arrow" style="transform:rotate(180deg)">▾</span>
       </button>
       <div class="cal-acc-body open" id="${uid}-brief">
         <div class="cal-field">
-          <div class="cal-field-lbl">Главный тезис</div>
+          <div class="cal-field-lbl">${tr('thesis')}</div>
           <div class="cal-field-val">${fval(item.mainThesis)}</div>
         </div>
         <div class="cal-field">
-          <div class="cal-field-lbl">Крючок / панчлайн</div>
+          <div class="cal-field-lbl">${tr('hook')}</div>
           <div class="cal-field-val cal-hook">${fval(item.punchlineOrHook)}</div>
         </div>
         ${item.cta ? `<div class="cal-cta">${escHtml(item.cta)}</div>` : ''}
@@ -566,8 +631,12 @@ function switchChar(char) {
 function toggleLang() {
   currentLang = currentLang === 'en' ? 'ru' : 'en';
   const btn = document.getElementById('btn-lang');
-  btn.textContent = currentLang === 'ru' ? 'RU' : 'EN';
+  btn.textContent = currentLang === 'ru' ? 'EN' : 'РУ';
   btn.classList.toggle('ru-active', currentLang === 'ru');
+  // Re-render calendar section with new language
+  const calEl = document.getElementById('cal-sections');
+  if (calEl) calEl.innerHTML = calendarInnerHTML();
+  updateRefreshUI();
 }
 
 // ── ACCORDION ────────────────────────────────────────────────────
