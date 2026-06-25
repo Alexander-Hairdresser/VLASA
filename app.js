@@ -73,7 +73,7 @@ async function loadCalendarData() {
 const VLASA_CONTENT_SOURCE_URL = 'https://docs.google.com/spreadsheets/d/1XMA4vm_0TydmLVDHLV9YVci6Q_VK9lFu/gviz/tq?tqx=out:csv&sheet=Dashboard_Source';
         (VLASA_CONTENT_SOURCE_URL.includes('?') ? '&' : '?') +
         '_t=' + Date.now();
-      const res = await fetch(url);
+      const res = await fetch(url, { credentials: 'omit', redirect: 'follow' });
       if (res.ok) {
         const text = await res.text();
         const items = parseCSV(text);
