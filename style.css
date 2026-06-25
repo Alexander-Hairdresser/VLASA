@@ -383,3 +383,180 @@ main {
   html { font-size: 16px; }
   .bottom-nav { left: 50%; transform: translateX(-50%); max-width: 520px; }
 }
+
+/* ══════════════════════════════════════════════
+   CALENDAR — luxury laboratory aesthetic
+   ══════════════════════════════════════════════ */
+
+/* ── Calendar card ─────────────────────────── */
+.cal-card {
+  background: rgba(250, 246, 238, 0.025);
+  border: 1px solid rgba(200, 175, 120, 0.18);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.45);
+  margin-bottom: 4px;
+}
+.cal-card-header {
+  display: flex; align-items: center; gap: 7px;
+  flex-wrap: wrap;
+  padding: 10px 13px 0;
+}
+.cal-card-title {
+  font-size: 15px; font-weight: 700;
+  color: var(--text);
+  padding: 8px 13px 10px;
+  line-height: 1.35;
+}
+
+/* ── Badges (content type) ─────────────────── */
+.cal-badge {
+  font-size: 9.5px; font-weight: 700;
+  letter-spacing: 0.09em; text-transform: uppercase;
+  padding: 3px 9px; border-radius: 20px;
+  flex-shrink: 0;
+}
+.badge-myth  { background: rgba(198,255,0,0.1);  color: #C6FF00; border: 1px solid rgba(198,255,0,0.2); }
+.badge-product{ background: rgba(96,165,250,0.1); color: #60a5fa; border: 1px solid rgba(96,165,250,0.2); }
+.badge-acc   { background: rgba(244,114,182,0.1);color: #f472b6; border: 1px solid rgba(244,114,182,0.2); }
+.badge-prot  { background: rgba(251,191,36,0.1); color: #fbbf24; border: 1px solid rgba(251,191,36,0.2); }
+.badge-mask  { background: rgba(167,139,250,0.1);color: #a78bfa; border: 1px solid rgba(167,139,250,0.2); }
+.badge-qa    { background: rgba(251,146,60,0.1); color: #fb923c; border: 1px solid rgba(251,146,60,0.2); }
+.badge-back  { background: rgba(34,211,238,0.1); color: #22d3ee; border: 1px solid rgba(34,211,238,0.2); }
+.badge-edu   { background: rgba(52,211,153,0.1); color: #34d399; border: 1px solid rgba(52,211,153,0.2); }
+.badge-vlasa { background: rgba(143,179,0,0.1);  color: #8fb300; border: 1px solid rgba(143,179,0,0.2); }
+.badge-def   { background: var(--surface3); color: var(--text-dim); border: 1px solid var(--border); }
+
+/* ── Meta labels ───────────────────────────── */
+.cal-episode {
+  font-size: 10px; color: var(--text-muted);
+  font-weight: 600; letter-spacing: 0.06em;
+}
+.cal-channel {
+  font-size: 10px; color: var(--text-muted);
+  background: var(--surface2); padding: 2px 7px;
+  border-radius: 10px;
+}
+.cal-status {
+  font-size: 10px; padding: 2px 8px; border-radius: 20px;
+  background: var(--surface3); color: var(--text-dim);
+  margin-left: auto;
+}
+.status-ready { background: rgba(198,255,0,0.08);  color: #C6FF00; }
+.status-draft { background: rgba(251,191,36,0.08); color: #fbbf24; }
+.status-done  { background: rgba(52,211,153,0.08); color: #34d399; }
+
+/* ── Calendar accordion ────────────────────── */
+.cal-acc { border-top: 1px solid rgba(200,175,120,0.1); }
+.cal-acc-trigger {
+  width: 100%; padding: 9px 13px;
+  background: none; border: none;
+  color: var(--text-dim); font-size: 10.5px; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: space-between;
+  text-align: left; transition: background 0.1s;
+}
+.cal-acc-trigger:hover { background: rgba(255,255,255,0.02); }
+.cal-acc-body { display: none; padding: 2px 13px 12px; }
+.cal-acc-body.open { display: block; }
+.cal-acc-arrow { font-size: 10px; display: inline-block; transition: transform 0.15s; }
+
+/* ── Field layout ──────────────────────────── */
+.cal-field { margin-bottom: 10px; }
+.cal-field-lbl {
+  font-size: 9.5px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;
+}
+.cal-field-val {
+  font-size: 13px; line-height: 1.65; color: var(--text);
+  white-space: pre-line;
+}
+.cal-hook {
+  background: rgba(198,255,0,0.03);
+  border: 1px solid rgba(198,255,0,0.1);
+  border-radius: var(--radius-sm);
+  padding: 9px 11px;
+  font-style: italic; color: rgba(255,255,255,0.85);
+}
+.cal-prompt {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 11.5px; line-height: 1.5;
+  color: var(--text-dim);
+}
+.cal-post-text {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-size: 12.5px; line-height: 1.65;
+}
+.cal-cta {
+  display: inline-block; margin-top: 6px;
+  font-size: 10.5px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--accent);
+}
+.cal-empty {
+  color: var(--text-muted); font-style: italic; font-size: 12px;
+}
+
+/* ── Empty state ───────────────────────────── */
+.cal-empty-state {
+  padding: 18px 14px;
+  color: var(--text-muted); font-size: 13px; font-style: italic;
+  background: var(--surface);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: var(--radius);
+  text-align: center;
+}
+
+/* ── 7-day list ────────────────────────────── */
+.cal-week-wrap {
+  background: var(--surface);
+  border: 1px solid rgba(200,175,120,0.12);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.cal-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.045);
+}
+.cal-row:last-child { border-bottom: none; }
+.cal-row-date {
+  font-size: 10.5px; color: var(--text-muted);
+  flex-shrink: 0; width: 62px; letter-spacing: 0.02em;
+}
+.cal-row-title {
+  flex: 1; font-size: 12px; color: var(--text-dim);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.cal-row-status {
+  font-size: 9.5px; flex-shrink: 0;
+  background: var(--surface3); color: var(--text-muted);
+  padding: 2px 7px; border-radius: 10px;
+}
+
+/* ── Filter bar ────────────────────────────── */
+.filter-bar {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  margin-bottom: 8px;
+}
+.filter-btn {
+  font-size: 10.5px; font-weight: 600;
+  padding: 4px 11px; border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--surface2); color: var(--text-dim);
+  cursor: pointer; transition: all 0.15s; letter-spacing: 0.03em;
+}
+.filter-btn.active {
+  background: rgba(200,175,120,0.1);
+  border-color: rgba(200,175,120,0.3);
+  color: rgba(255,240,200,0.9);
+}
+.filter-btn:active { transform: scale(0.95); }

@@ -2,25 +2,31 @@
    B.LIKE DASHBOARD v2 — app.js
    ============================================= */
 
-const BASE_DATE = new Date('2026-06-20');
+// ── CALENDAR CONFIG ────────────────────────────
+// Вставь сюда ссылку на опубликованный Google Sheet в формате CSV:
+// Таблица → Файл → Опубликовать в интернете → Формат: CSV → Лист: Dashboard_Source
+// Пример: https://docs.google.com/spreadsheets/d/XXXXX/gviz/tq?tqx=out:csv&sheet=Dashboard_Source
+const VLASA_CONTENT_SOURCE_URL = '';
+
+const BASE_DATE    = new Date('2026-06-20');
 const HIGGSFIELD_URL = 'https://higgsfield.ai';
 
 // ── STATE ─────────────────────────────────────
 let currentChar = 'vlasa-lab';
 let currentLang = 'en';
-let allPosts = [];
-let allTasks = {};
+let allPosts    = [];
+let allTasks    = {};
+let allCalendar = [];
+let calendarFilter = 'all';
 const taskState = {};
-let tokenHistory = [];
-try { tokenHistory = JSON.parse(localStorage.getItem('blike_tokens') || '[]'); } catch(e) {}
 
 // ── CHARACTERS ────────────────────────────────
 const CHARS = {
-  'vlasa-lab':  { emoji: '🧪', name: 'Власа Смоленская', tagline: 'B.Like Active Lab', heroPos: 'center 25%' },
-  'vlasa-hair': { emoji: '✂️', name: 'Власа — Парикмахер', tagline: 'Salon Mode', heroPos: 'center 20%' },
-  'cats':       { emoji: '🐱', name: 'Уголёк & Огонёк', tagline: 'Warehouse Reviews', heroPos: 'center 30%' },
-  'products':   { emoji: '🛍', name: 'B.Like Products', tagline: 'Продукты', heroPos: 'center 25%' },
-  'alexander':  { emoji: '⚡', name: 'Александр Ром', tagline: 'B.Like Luxury', heroPos: 'center 20%' },
+  'vlasa-lab':  { emoji:'🧪', name:'Власа Смоленская', tagline:'B.Like Active Lab', heroPos:'center 25%' },
+  'vlasa-hair': { emoji:'✂️', name:'Власа — Парикмахер', tagline:'Salon Mode',        heroPos:'center 20%' },
+  'cats':       { emoji:'🐱', name:'Уголёк & Огонёк',   tagline:'Warehouse Reviews', heroPos:'center 30%' },
+  'products':   { emoji:'🛍', name:'B.Like Products',   tagline:'Продукты',           heroPos:'center 25%' },
+  'alexander':  { emoji:'⚡', name:'Александр Ром',     tagline:'B.Like Luxury',      heroPos:'center 20%' },
 };
 
 // ── INIT ──────────────────────────────────────
@@ -28,116 +34,350 @@ async function init() {
   const today = new Date(); today.setHours(0,0,0,0);
   const dayIndex = Math.floor((today - BASE_DATE) / 86400000);
   renderHeader(today, dayIndex + 1);
-  try {
-    const [posts, tasks] = await Promise.all([
-      fetch('data/posts.json').then(r => r.json()),
-      fetch('data/tasks.json').then(r => r.json()),
-    ]);
-    allPosts = posts; allTasks = tasks;
-    renderPage(dayIndex);
-  } catch(e) {
-    document.getElementById('main-content').innerHTML =
-      '<p style="color:#888;padding:32px;text-align:center">Ошибка загрузки данных.<br>Нужен сервер (не file://).</p>';
-  }
+
+  const [postsRes, tasksRes, calRes] = await Promise.allSettled([
+    fetch('data/posts.json').then(r => r.json()),
+    fetch('data/tasks.json').then(r => r.json()),
+    loadCalendarData(),
+  ]);
+
+  allPosts    = postsRes.status === 'fulfilled'  ? postsRes.value  : [];
+  allTasks    = tasksRes.status === 'fulfilled'  ? tasksRes.value  : {};
+  allCalendar = calRes.status   === 'fulfilled'  ? calRes.value    : [];
+
+  renderPage(dayIndex);
 }
 
-// ── RENDER PAGE (character-aware) ─────────────
+// ── CALENDAR LOADING ──────────────────────────
+async function loadCalendarData() {
+  if (VLASA_CONTENT_SOURCE_URL) {
+    try {
+      const res = await fetch(VLASA_CONTENT_SOURCE_URL);
+      if (res.ok) {
+        const text = await res.text();
+        const items = parseCSV(text);
+        if (items.length > 0) return items;
+      }
+    } catch(e) { /* fall through */ }
+  }
+  try {
+    const res = await fetch('data/vlasa-content-calendar.tsv');
+    if (res.ok) return parseTSV(await res.text());
+  } catch(e) {}
+  return [];
+}
+
+// ── CSV PARSER (Google Sheets export) ─────────
+function parseCSV(text) {
+  const parseRow = line => {
+    const fields = []; let field = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"') { if (inQ && line[i+1] === '"') { field += '"'; i++; } else inQ = !inQ; }
+      else if (c === ',' && !inQ) { fields.push(field.trim()); field = ''; }
+      else field += c;
+    }
+    fields.push(field.trim()); return fields;
+  };
+  const lines = text.trim().split('\n');
+  if (!lines.length) return [];
+  const headers = parseRow(lines[0]);
+  return lines.slice(1).filter(l => l.trim()).map(line => {
+    const cells = parseRow(line); const obj = {};
+    headers.forEach((h, i) => { obj[h.trim()] = cells[i] || ''; });
+    return normalizeCalItem(obj);
+  }).filter(i => i.postDate);
+}
+
+// ── TSV PARSER (local fallback) ───────────────
+function parseTSV(text) {
+  const lines = text.trim().split('\n');
+  if (!lines.length) return [];
+  const headers = lines[0].split('\t').map(h => h.trim());
+  return lines.slice(1).filter(l => l.trim()).map(line => {
+    const cells = line.split('\t'); const obj = {};
+    headers.forEach((h, i) => { obj[h] = cells[i]?.trim() || ''; });
+    return normalizeCalItem(obj);
+  }).filter(i => i.postDate);
+}
+
+// ── NORMALIZE ─────────────────────────────────
+function normalizeCalItem(row) {
+  let d = (row.Post_Date || '').trim();
+  if (/^\d{2}\.\d{2}\.\d{4}$/.test(d)) {
+    const [dd, mm, yy] = d.split('.'); d = `${yy}-${mm}-${dd}`;
+  }
+  return {
+    postDate:         d,
+    contentType:      row.Content_Type      || '',
+    episodeId:        row.Episode_ID        || '',
+    dashboardTitle:   row.Dashboard_Title   || '',
+    mainThesis:       row.Main_Thesis       || '',
+    punchlineOrHook:  row.Punchline_or_Hook || '',
+    visualSituation:  row.Visual_Situation  || '',
+    imagePromptShort: row.Image_Prompt_Short|| '',
+    grokVideo10s:     row.Grok_Video_10s    || '',
+    postRu:           row.Post_RU           || '',
+    postEn:           row.Post_EN           || '',
+    cta:              row.CTA               || '',
+    status:           row.Status            || '',
+    channel:          row.Channel           || '',
+    notes:            row.Notes             || '',
+  };
+}
+
+// ── DATE HELPERS ──────────────────────────────
+function dateStr(offset = 0) {
+  const d = new Date(); d.setDate(d.getDate() + offset);
+  return d.toISOString().slice(0, 10);
+}
+function getTodayContent()    { return allCalendar.filter(i => i.postDate === dateStr(0)); }
+function getTomorrowContent() { return allCalendar.filter(i => i.postDate === dateStr(1)); }
+function getNextSevenDays(typeFilter = 'all') {
+  const start = new Date(); start.setHours(0,0,0,0);
+  const end   = new Date(start); end.setDate(end.getDate() + 7);
+  return allCalendar.filter(i => {
+    const d = new Date(i.postDate); if (isNaN(d)) return false;
+    if (d < start || d >= end) return false;
+    return typeFilter === 'all' || i.contentType === typeFilter;
+  }).sort((a, b) => a.postDate.localeCompare(b.postDate));
+}
+
+// ── FIELD VALUE GUARD ──────────────────────────
+// Never show AI-invented text — if field is empty, show explicit prompt.
+const NEED_FILL = '<span class="cal-empty">Нужно заполнить в таблице</span>';
+function fval(v) { return (v && v.trim()) ? escHtml(v) : NEED_FILL; }
+
+// ── RENDER PAGE ───────────────────────────────
 function renderPage(dayIndex) {
   const main = document.getElementById('main-content');
-  if (currentChar === 'vlasa-lab') {
-    renderVlasaLab(dayIndex, main);
-  } else {
-    renderPlaceholder(main);
-  }
+  if (currentChar === 'vlasa-lab') renderVlasaLab(dayIndex, main);
+  else renderPlaceholder(main);
 }
 
 // ── VLASA LAB PAGE ────────────────────────────
 function renderVlasaLab(dayIndex, container) {
-  const todayPost   = allPosts[dayIndex] || null;
-  const tomorrowPost = allPosts[dayIndex + 1] || null;
-  const lang = currentLang;
-
   let html = '';
-
-  // Sprint progress
-  html += `<div id="sprint-section">${sprintBarHTML(dayIndex + 1, allPosts.length)}</div>`;
-
-  // Today X
-  html += `<div class="section-label">Сегодня в X / Twitter</div>`;
-  html += `<div id="today-x">${todayXHTML(todayPost, lang)}</div>`;
-
-  // Today IG
-  html += `<div class="section-label">Сегодня в Instagram</div>`;
-  html += `<div id="today-ig">${todayIGHTML(todayPost)}</div>`;
-
-  // Tomorrow
-  if (tomorrowPost) {
-    html += `<div class="section-label">Завтра</div>`;
-    html += `<div id="tomorrow-section">${tomorrowHTML(tomorrowPost, lang)}</div>`;
-  }
-
-  // Tasks
+  html += `<div id="sprint-section">${sprintBarHTML(dayIndex + 1, allPosts.length || 30)}</div>`;
+  html += calendarSectionsHTML();
   html += `<div class="section-label">Задачи</div>`;
   html += `<div id="tasks-section">${tasksHTML()}</div>`;
-
-  // Cats accordion
   html += `<div id="cats-section">${catsHTML()}</div>`;
-
-  // Higgsfield
   html += `<div class="hixel-section"><a class="btn-hixel" href="${HIGGSFIELD_URL}" target="_blank" rel="noopener">🎬 Открыть Higgsfield</a></div>`;
-
-  // Footer
   html += `<footer class="footer">B.Like Active Lab · Sprint 01 · v2</footer>`;
-
   container.innerHTML = html;
+}
+
+// ── CALENDAR SECTIONS ─────────────────────────
+function calendarSectionsHTML() {
+  let html = '';
+  const todayItems    = getTodayContent();
+  const tomorrowItems = getTomorrowContent();
+
+  // Zone 1: Today
+  html += `<div class="section-label">Сегодня в лаборатории</div>`;
+  if (!todayItems.length) {
+    html += `<div class="cal-empty-state">На сегодня контент не запланирован</div>`;
+  } else {
+    html += todayItems.map(item => calCardHTML(item)).join('');
+  }
+
+  // Zone 2: Tomorrow
+  html += `<div class="section-label">Завтра в лаборатории</div>`;
+  if (!tomorrowItems.length) {
+    html += `<div class="cal-empty-state">На завтра контент не запланирован</div>`;
+  } else {
+    html += tomorrowItems.map(item => calCardHTML(item, true)).join('');
+  }
+
+  // Zone 3: Next 7 days
+  html += `<div class="section-label">Ближайшие публикации</div>`;
+  html += filterBarHTML();
+  html += `<div id="cal-7d-list" class="cal-week-wrap">${sevenDayListHTML('all')}</div>`;
+
+  return html;
+}
+
+// ── CALENDAR CARD ─────────────────────────────
+function calCardHTML(item, compact = false) {
+  const uid = `c${Date.now().toString(36)}${Math.random().toString(36).slice(2,5)}`;
+  const hasImgPrompt = item.imagePromptShort && item.imagePromptShort.trim();
+  const hasVidPrompt = item.grokVideo10s && item.grokVideo10s.trim();
+  const hasPostRu    = item.postRu && item.postRu.trim();
+  const hasPostEn    = item.postEn && item.postEn.trim();
+
+  const visualAccordion = !compact ? `
+    <div class="cal-acc">
+      <button class="cal-acc-trigger" onclick="toggleCalAcc('${uid}-vis')">
+        Визуал <span class="cal-acc-arrow">▾</span>
+      </button>
+      <div class="cal-acc-body" id="${uid}-vis">
+        <div class="cal-field">
+          <div class="cal-field-lbl">Визуальная сцена</div>
+          <div class="cal-field-val">${fval(item.visualSituation)}</div>
+        </div>
+        <div class="cal-field">
+          <div class="cal-field-lbl">Промпт картинка</div>
+          <div class="cal-field-val cal-prompt" id="${uid}-img">${fval(item.imagePromptShort)}</div>
+        </div>
+        <div class="cal-field">
+          <div class="cal-field-lbl">Промпт видео 10s</div>
+          <div class="cal-field-val cal-prompt" id="${uid}-vid">${fval(item.grokVideo10s)}</div>
+        </div>
+        ${hasImgPrompt||hasVidPrompt ? `<div class="btn-row" style="margin-top:8px">
+          ${hasImgPrompt?`<button class="btn btn-copy" onclick="copyText('${uid}-img',this)">📋 Промпт картинки</button>`:''}
+          ${hasVidPrompt?`<button class="btn btn-copy" onclick="copyText('${uid}-vid',this)">🎬 Промпт видео</button>`:''}
+        </div>` : ''}
+      </div>
+    </div>` : '';
+
+  const postAccordion = !compact ? `
+    <div class="cal-acc">
+      <button class="cal-acc-trigger" onclick="toggleCalAcc('${uid}-post')">
+        Пост <span class="cal-acc-arrow">▾</span>
+      </button>
+      <div class="cal-acc-body" id="${uid}-post">
+        <div class="cal-field">
+          <div class="cal-field-lbl">Post RU</div>
+          <div class="cal-field-val cal-post-text" id="${uid}-ru">${fval(item.postRu)}</div>
+        </div>
+        <div class="cal-field">
+          <div class="cal-field-lbl">Post EN</div>
+          <div class="cal-field-val cal-post-text" id="${uid}-en">${fval(item.postEn)}</div>
+        </div>
+        ${hasPostRu||hasPostEn ? `<div class="btn-row" style="margin-top:8px">
+          ${hasPostRu?`<button class="btn btn-copy" onclick="copyText('${uid}-ru',this)">📋 RU</button>`:''}
+          ${hasPostEn?`<button class="btn btn-copy" onclick="copyText('${uid}-en',this)">📋 EN</button>`:''}
+        </div>` : ''}
+      </div>
+    </div>` : '';
+
+  return `<div class="cal-card">
+    <div class="cal-card-header">
+      ${typeBadge(item.contentType)}
+      ${item.episodeId?`<span class="cal-episode">${escHtml(item.episodeId)}</span>`:''}
+      ${item.channel?`<span class="cal-channel">${escHtml(item.channel)}</span>`:''}
+      ${item.status?`<span class="cal-status ${statusCls(item.status)}">${escHtml(item.status)}</span>`:''}
+    </div>
+    <div class="cal-card-title">${fval(item.dashboardTitle)}</div>
+    <div class="cal-acc">
+      <button class="cal-acc-trigger" onclick="toggleCalAcc('${uid}-brief')">
+        Кратко <span class="cal-acc-arrow" style="transform:rotate(180deg)">▾</span>
+      </button>
+      <div class="cal-acc-body open" id="${uid}-brief">
+        <div class="cal-field">
+          <div class="cal-field-lbl">Главный тезис</div>
+          <div class="cal-field-val">${fval(item.mainThesis)}</div>
+        </div>
+        <div class="cal-field">
+          <div class="cal-field-lbl">Крючок / панчлайн</div>
+          <div class="cal-field-val cal-hook">${fval(item.punchlineOrHook)}</div>
+        </div>
+        ${item.cta?`<div class="cal-cta">${escHtml(item.cta)}</div>`:''}
+      </div>
+    </div>
+    ${visualAccordion}
+    ${postAccordion}
+  </div>`;
+}
+
+// ── TYPE BADGE ────────────────────────────────
+const BADGE_MAP = {
+  'Мифопсия':'badge-myth','Продукт':'badge-product','Аксессуар':'badge-acc',
+  'Протокол':'badge-prot','Маска':'badge-mask','Q&A':'badge-qa',
+  'Backstage':'badge-back','Обучение':'badge-edu','Пост Власы':'badge-vlasa',
+};
+function typeBadge(type) {
+  if (!type) return '';
+  const cls = BADGE_MAP[type] || 'badge-def';
+  return `<span class="cal-badge ${cls}">${escHtml(type)}</span>`;
+}
+function statusCls(s) {
+  const l = (s||'').toLowerCase();
+  if (l.includes('ready')||l.includes('готов')) return 'status-ready';
+  if (l.includes('draft')||l.includes('черн'))  return 'status-draft';
+  if (l.includes('done')||l.includes('опублик')) return 'status-done';
+  return '';
+}
+
+// ── FILTER BAR ────────────────────────────────
+const FILTER_TYPES  = ['all','Мифопсия','Продукт','Аксессуар','Протокол','Маска','Q&A'];
+const FILTER_LABELS = { all:'Все','Мифопсия':'Мифопсии','Продукт':'Продукты',
+  'Аксессуар':'Аксессуары','Протокол':'Протоколы','Маска':'Маски','Q&A':'Q&A' };
+
+function filterBarHTML() {
+  return `<div class="filter-bar">` +
+    FILTER_TYPES.map(t =>
+      `<button class="filter-btn${calendarFilter===t?' active':''}" onclick="setCalFilter('${t}')">${FILTER_LABELS[t]}</button>`
+    ).join('') + `</div>`;
+}
+
+function sevenDayListHTML(typeFilter) {
+  const items = getNextSevenDays(typeFilter);
+  if (!items.length) return `<div class="cal-empty-state">Публикаций не запланировано</div>`;
+  return items.map(item => {
+    const d = new Date(item.postDate);
+    const MONTHS = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+    const WDAYS  = ['вс','пн','вт','ср','чт','пт','сб'];
+    const label  = isNaN(d) ? item.postDate : `${d.getDate()} ${MONTHS[d.getMonth()]} ${WDAYS[d.getDay()]}`;
+    return `<div class="cal-row">
+      <span class="cal-row-date">${label}</span>
+      ${typeBadge(item.contentType)}
+      <span class="cal-row-title">${item.dashboardTitle ? escHtml(item.dashboardTitle) : '<span class="cal-empty">—</span>'}</span>
+      ${item.status?`<span class="cal-row-status ${statusCls(item.status)}">${escHtml(item.status)}</span>`:''}
+    </div>`;
+  }).join('');
+}
+
+function setCalFilter(type) {
+  calendarFilter = type;
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.textContent.trim() === (FILTER_LABELS[type]||''));
+  });
+  const el = document.getElementById('cal-7d-list');
+  if (el) el.innerHTML = sevenDayListHTML(type);
+}
+
+function toggleCalAcc(id) {
+  const body = document.getElementById(id);
+  if (!body) return;
+  const trigger = body.previousElementSibling;
+  const isOpen  = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  const arrow = trigger?.querySelector('.cal-acc-arrow');
+  if (arrow) arrow.style.transform = isOpen ? '' : 'rotate(180deg)';
 }
 
 // ── PLACEHOLDER PAGE ──────────────────────────
 function renderPlaceholder(container) {
   const placeholders = {
-    'vlasa-hair': {
-      emoji: '✂️', title: 'Власа — Парикмахер',
-      text: 'Посты из жизни салона, работа с клиентами, закулисье мастера. Скоро.',
-      link: null
-    },
-    'cats': {
-      emoji: '🐱', title: 'Уголёк & Огонёк',
-      text: 'Уголёк проверяет отзывы. Огонёк молчит в коробке. Всё под контролем.',
-      link: '../04_Content/Cats_Warehouse_Reviews/CATS_CASE_01_CHAIN.html',
-      linkLabel: '📦 Case #01 — Карбоновый планшет'
-    },
-    'products': {
-      emoji: '🛍', title: 'B.Like Products',
-      text: 'Карточки продуктов, описания, истории создания. В разработке.',
-      link: null
-    },
-    'alexander': {
-      emoji: '👑', title: 'Александр Ром',
-      text: 'Личный бренд. Люкс. Преподавание. Основатель B.Like. Скоро.',
-      link: null
-    },
+    'vlasa-hair': { emoji:'✂️', title:'Власа — Парикмахер', text:'Посты из жизни салона, закулисье мастера. Скоро.', link:null },
+    'cats':       { emoji:'🐱', title:'Уголёк & Огонёк',   text:'Уголёк проверяет отзывы. Огонёк молчит в коробке.',
+                    link:'../04_Content/Cats_Warehouse_Reviews/CATS_CASE_01_CHAIN.html', linkLabel:'📦 Case #01 — Карбоновый планшет' },
+    'products':   { emoji:'🛍', title:'B.Like Products',   text:'Карточки продуктов, истории создания. В разработке.', link:null },
+    'alexander':  { emoji:'⚡', title:'Александр Ром',     text:'Личный бренд. Люкс. Преподавание. Основатель B.Like.', link:null },
   };
   const p = placeholders[currentChar] || {};
   container.innerHTML = `
     <div class="placeholder-page">
-      <div class="placeholder-emoji">${p.emoji || '✦'}</div>
-      <div class="placeholder-title">${p.title || ''}</div>
-      <div class="placeholder-text">${p.text || ''}</div>
-      ${p.link ? `<a class="placeholder-link" href="${p.link}" target="_blank">${p.linkLabel}</a>` : ''}
+      <div class="placeholder-emoji">${p.emoji||'✦'}</div>
+      <div class="placeholder-title">${p.title||''}</div>
+      <div class="placeholder-text">${p.text||''}</div>
+      ${p.link?`<a class="placeholder-link" href="${p.link}" target="_blank">${p.linkLabel}</a>`:''}
     </div>
     <footer class="footer">B.Like Active Lab · v2</footer>`;
 }
 
 // ── HEADER ────────────────────────────────────
 function renderHeader(date, dayNum) {
-  const days = ['Воскресенье','Понедельник','Вторник','Среда','Четверг','Пятница','Суббота'];
+  const days   = ['Воскресенье','Понедельник','Вторник','Среда','Четверг','Пятница','Суббота'];
   const months = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
   document.getElementById('header-date').innerHTML =
     `<strong>${date.getDate()} ${months[date.getMonth()]}</strong>${days[date.getDay()]}`;
   document.getElementById('header-day').textContent = `День ${dayNum}`;
 }
 
-// ── SPRINT BAR HTML ───────────────────────────
+// ── SPRINT BAR ────────────────────────────────
 function sprintBarHTML(dayNum, total) {
   const pct = Math.min(100, Math.round((dayNum / total) * 100));
   return `<div class="sprint-bar">
@@ -149,96 +389,20 @@ function sprintBarHTML(dayNum, total) {
   </div>`;
 }
 
-// ── TODAY X HTML ──────────────────────────────
-function todayXHTML(post, lang) {
-  if (!post) return `<div class="card"><div class="card-body" style="color:var(--text-dim);text-align:center;padding:24px">Sprint завершён</div></div>`;
-  const x = post.x;
-  const text = (lang === 'ru' && x.text_ru) ? x.text_ru : x.text;
-  return `<div class="card">
-    <div class="card-header">
-      <span class="card-title">X / Twitter</span>
-      <span class="card-badge">${x.id}</span>
-    </div>
-    <div class="card-body">
-      <div class="post-pillar">${x.pillar}</div>
-      <div class="post-text" id="x-text">${escHtml(text)}</div>
-      <div class="post-tags">${escHtml(x.tags)}</div>
-      <div class="post-visual">${escHtml(x.visual)}</div>
-      <div class="btn-row">
-        <button class="btn btn-copy" onclick="copyText('x-text',this)">📋 Скопировать</button>
-        <button class="btn btn-copy" onclick="copyRaw('${escAttr(x.text + '\n\n' + x.tags)}',this)"># Теги</button>
-      </div>
-    </div>
-  </div>`;
-}
-
-// ── TODAY IG HTML ─────────────────────────────
-function todayIGHTML(post) {
-  if (!post || !post.instagram) return `<div class="card"><div class="card-body" style="color:var(--text-dim);text-align:center;padding:20px">Instagram-очередь заполнена на 7 дней. Новый контент — в работе.</div></div>`;
-  const ig = post.instagram;
-  return `<div class="card">
-    <div class="card-header">
-      <span class="card-title">Instagram</span>
-      <span class="card-badge ${ig.status==='ready'?'ready':''}">${ig.status==='ready'?'✓ Готово':'⬜ Pending'}</span>
-    </div>
-    <div class="card-body">
-      <div class="ig-format-badge">${escHtml(ig.format)}</div>
-      <div class="ig-caption" id="ig-caption">${escHtml(ig.caption)}</div>
-      <div class="ig-reels-hint">${escHtml(ig.reels)}</div>
-      <div class="ig-repost-tag ${ig.repost_alexander?'yes':''}">↗ Репост к Александру: ${ig.repost_alexander?'да':'нет'}</div>
-      <div class="btn-row">
-        <button class="btn btn-copy" onclick="copyText('ig-caption',this)">📋 Скопировать подпись</button>
-      </div>
-    </div>
-  </div>`;
-}
-
-// ── TOMORROW HTML ─────────────────────────────
-function tomorrowHTML(post, lang) {
-  const text = (lang === 'ru' && post.x.text_ru) ? post.x.text_ru : post.x.text;
-  const preview = text.split('\n')[0];
-  return `<div class="tomorrow-card" onclick="toggleTomorrow()">
-    <span class="tomorrow-label">Завтра</span>
-    <span class="tomorrow-title" id="tmrw-title">${escHtml(preview)}</span>
-    <span id="tmrw-arrow">▾</span>
-  </div>
-  <div id="tmrw-body" style="display:none">
-    <div class="card" style="margin-top:6px">
-      <div class="card-body">
-        <div class="post-pillar">${escHtml(post.x.pillar)}</div>
-        <div class="post-text">${escHtml(text)}</div>
-        <div class="post-tags" style="opacity:0.6">${escHtml(post.x.tags)}</div>
-      </div>
-    </div>
-  </div>`;
-}
-
-function toggleTomorrow() {
-  const body = document.getElementById('tmrw-body');
-  const arrow = document.getElementById('tmrw-arrow');
-  if (!body) return;
-  const open = body.style.display !== 'none';
-  body.style.display = open ? 'none' : 'block';
-  arrow.textContent = open ? '▾' : '▴';
-}
-
-// ── TASKS HTML ────────────────────────────────
+// ── TASKS ─────────────────────────────────────
 function tasksHTML() {
   if (!allTasks.daily) return '';
   const items = allTasks.daily.map(t => taskItemHTML(t)).join('');
-  const done = allTasks.daily.filter(t => taskState[t.id]).length;
+  const done  = allTasks.daily.filter(t => taskState[t.id]).length;
   return `<div class="acc-block">
     <button class="acc-trigger" onclick="toggleAcc('acc-daily')" aria-expanded="true">
       <span class="acc-trigger-label">Задачи на сегодня</span>
       <span class="acc-trigger-count" id="daily-count">${done}/${allTasks.daily.length}</span>
       <span class="acc-trigger-arrow">▾</span>
     </button>
-    <div class="acc-body open" id="acc-daily">
-      <ul class="task-list">${items}</ul>
-    </div>
+    <div class="acc-body open" id="acc-daily"><ul class="task-list">${items}</ul></div>
   </div>`;
 }
-
 function taskItemHTML(t) {
   const done = taskState[t.id] ? 'done' : '';
   return `<li class="task-item ${done}" id="task-${t.id}" onclick="toggleTask('${t.id}')">
@@ -248,11 +412,11 @@ function taskItemHTML(t) {
   </li>`;
 }
 
-// ── CATS HTML ─────────────────────────────────
+// ── CATS ──────────────────────────────────────
 function catsHTML() {
   if (!allTasks.cats) return '';
   const items = allTasks.cats.map(t => taskItemHTML(t)).join('');
-  const done = allTasks.cats.filter(t => taskState[t.id]).length;
+  const done  = allTasks.cats.filter(t => taskState[t.id]).length;
   return `<div class="acc-block">
     <button class="acc-trigger" onclick="toggleAcc('acc-cats')" aria-expanded="false" style="color:var(--red)">
       <span class="acc-trigger-label" style="color:var(--red)">Cats / Warehouse Reviews</span>
@@ -274,17 +438,12 @@ function catsHTML() {
 function switchChar(char) {
   currentChar = char;
   document.body.setAttribute('data-char', char);
-  // Update nav
-  document.querySelectorAll('.nav-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.char === char);
-  });
-  // Update header
+  document.querySelectorAll('.nav-btn').forEach(btn =>
+    btn.classList.toggle('active', btn.dataset.char === char));
   const c = CHARS[char] || CHARS['vlasa-lab'];
-  document.getElementById('char-name').textContent = c.name;
-  document.getElementById('hero-tagline').textContent = c.tagline;
-  document.getElementById('hero-img').style.objectPosition = c.heroPos;
-  // Re-render
-  const today = new Date(); today.setHours(0,0,0,0);
+  const nameEl = document.getElementById('char-name');
+  if (nameEl) nameEl.textContent = c.name;
+  const today    = new Date(); today.setHours(0,0,0,0);
   const dayIndex = Math.floor((today - BASE_DATE) / 86400000);
   renderPage(dayIndex);
 }
@@ -295,17 +454,7 @@ function toggleLang() {
   const btn = document.getElementById('btn-lang');
   btn.textContent = currentLang === 'ru' ? 'RU' : 'EN';
   btn.classList.toggle('ru-active', currentLang === 'ru');
-  // Re-render only text parts
-  const today = new Date(); today.setHours(0,0,0,0);
-  const dayIndex = Math.floor((today - BASE_DATE) / 86400000);
-  if (currentChar === 'vlasa-lab') {
-    const todayPost = allPosts[dayIndex] || null;
-    const tomorrowPost = allPosts[dayIndex + 1] || null;
-    const xEl = document.getElementById('today-x');
-    if (xEl) xEl.innerHTML = todayXHTML(todayPost, currentLang);
-    const tmrEl = document.getElementById('tomorrow-section');
-    if (tmrEl && tomorrowPost) tmrEl.innerHTML = tomorrowHTML(tomorrowPost, currentLang);
-  }
+  // Calendar shows both languages; no re-render needed
 }
 
 // ── ACCORDION ─────────────────────────────────
@@ -313,19 +462,18 @@ function toggleAcc(id) {
   const body = document.getElementById(id);
   if (!body) return;
   const trigger = body.previousElementSibling;
-  const isOpen = body.classList.contains('open');
+  const isOpen  = body.classList.contains('open');
   body.classList.toggle('open', !isOpen);
-  trigger.setAttribute('aria-expanded', !isOpen);
+  if (trigger) trigger.setAttribute('aria-expanded', !isOpen);
 }
 
-// ── TASKS ─────────────────────────────────────
+// ── TASKS TOGGLE ──────────────────────────────
 function toggleTask(id) {
   taskState[id] = !taskState[id];
   const item = document.getElementById('task-' + id);
   if (!item) return;
   item.classList.toggle('done', taskState[id]);
   item.querySelector('.task-check').textContent = taskState[id] ? '✓' : '';
-  // Update counters
   if (allTasks.daily) {
     const done = allTasks.daily.filter(t => taskState[t.id]).length;
     const el = document.getElementById('daily-count');
@@ -338,59 +486,13 @@ function toggleTask(id) {
   }
 }
 
-// ── TIKTOK TOKEN MODAL ────────────────────────
-function openTokenModal() {
-  renderTokenHistory();
-  document.getElementById('token-modal').style.display = 'flex';
-  setTimeout(() => document.getElementById('token-input')?.focus(), 100);
-}
-
-function closeTokenModal(e) {
-  if (!e || e.target === document.getElementById('token-modal')) {
-    document.getElementById('token-modal').style.display = 'none';
-  }
-}
-
-function saveToken() {
-  const input = document.getElementById('token-input');
-  const val = parseInt(input.value);
-  if (isNaN(val) || val < 0) return;
-  const today = new Date();
-  const entry = {
-    date: `${today.getDate()}.${today.getMonth()+1}.${today.getFullYear()}`,
-    count: val
-  };
-  tokenHistory.unshift(entry);
-  if (tokenHistory.length > 10) tokenHistory = tokenHistory.slice(0, 10);
-  localStorage.setItem('blike_tokens', JSON.stringify(tokenHistory));
-  input.value = '';
-  renderTokenHistory();
-}
-
-function renderTokenHistory() {
-  const el = document.getElementById('token-history');
-  if (!el) return;
-  if (tokenHistory.length === 0) {
-    el.innerHTML = '<div style="color:var(--text-muted);font-size:12px;text-align:center;padding:8px 0">История пустая</div>';
-    return;
-  }
-  el.innerHTML = tokenHistory.map(e =>
-    `<div class="token-row">
-      <span class="token-row-date">${e.date}</span>
-      <span class="token-row-count">${e.count.toLocaleString()}</span>
-    </div>`
-  ).join('');
-}
-
 // ── COPY HELPERS ──────────────────────────────
 function copyText(elementId, btn) {
   const el = document.getElementById(elementId);
   if (!el) return;
   doCopy(el.innerText || el.textContent, btn);
 }
-
 function copyRaw(text, btn) { doCopy(text, btn); }
-
 function doCopy(text, btn) {
   const orig = btn ? btn.innerHTML : '';
   navigator.clipboard.writeText(text).then(() => {
