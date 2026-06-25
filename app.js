@@ -54,6 +54,7 @@ const I18N = {
     fProt:      'Protocols',
     fMask:      'Masks',
     fQA:        'Q&A',
+    product:    'Product / Asset',
   },
   ru: {
     today:      'Сегодня в лаборатории',
@@ -84,6 +85,7 @@ const I18N = {
     fProt:      'Протоколы',
     fMask:      'Маски',
     fQA:        'Q&A',
+    product:    'Продукт / Актив',
   }
 };
 function tr(key) { return (I18N[currentLang] || I18N.en)[key] || key; }
@@ -283,6 +285,7 @@ function normalizeCalItem(row) {
     status:          row.Status            || '',
     channel:         row.Channel           || '',
     notes:           row.Notes             || '',
+    productOrAsset:  row.Product_or_Asset  || '',
   };
 }
 
@@ -447,6 +450,10 @@ function calCardHTML(item, compact = false) {
           <div class="cal-field-lbl">${tr('hook')}</div>
           <div class="cal-field-val cal-hook">${fval(item.punchlineOrHook)}</div>
         </div>
+        ${item.productOrAsset ? `<div class="cal-field" style="margin-top:6px">
+          <div class="cal-field-lbl">${tr('product')}</div>
+          <div class="cal-field-val" style="font-weight:500">${escHtml(item.productOrAsset)}</div>
+        </div>` : ''}
         ${item.cta ? `<div class="cal-cta">${escHtml(item.cta)}</div>` : ''}
       </div>
     </div>
