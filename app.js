@@ -6,7 +6,7 @@
 // Вставь сюда ссылку на опубликованный Google Sheet (формат CSV):
 // Таблица → Файл → Опубликовать в интернете → Формат: CSV → Лист: Dashboard_Source
 // Пример: https://docs.google.com/spreadsheets/d/XXXXX/gviz/tq?tqx=out:csv&sheet=Dashboard_Source
-const VLASA_CONTENT_SOURCE_URL = 'https://docs.google.com/spreadsheets/d/1XMA4vm_0TydmLVDHLV9YVci6Q_VK9lFu/gviz/tq?tqx=out:csv&sheet=Dashboard_Source';
+const VLASA_CONTENT_SOURCE_URL = 'https://docs.google.com/spreadsheets/d/1nTNR_l6Ci2Tg51LA3pVyl8yxO4Rp-YG3GdThcdY-arQ/gviz/tq?tqx=out:csv&sheet=Dashboard_Source';
 
 // Интервал авто-обновления данных (мс). 300000 = 5 минут
 const AUTO_REFRESH_MS = 300000;
@@ -70,7 +70,7 @@ async function loadCalendarData() {
   if (VLASA_CONTENT_SOURCE_URL) {
     try {
       // cache-bust параметр — чтобы браузер не брал устаревшую копию
-const VLASA_CONTENT_SOURCE_URL = 'https://docs.google.com/spreadsheets/d/1XMA4vm_0TydmLVDHLV9YVci6Q_VK9lFu/gviz/tq?tqx=out:csv&sheet=Dashboard_Source';
+const VLASA_CONTENT_SOURCE_URL = 'https://docs.google.com/spreadsheets/d/1nTNR_l6Ci2Tg51LA3pVyl8yxO4Rp-YG3GdThcdY-arQ/gviz/tq?tqx=out:csv&sheet=Dashboard_Source';
         (VLASA_CONTENT_SOURCE_URL.includes('?') ? '&' : '?') +
         '_t=' + Date.now();
       const res = await fetch(url, { credentials: 'omit', redirect: 'follow' });
